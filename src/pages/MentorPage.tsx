@@ -1,6 +1,6 @@
 import { Card } from "../components/ui/card";
 import {Button} from "../components/ui/button";
-import {Crown, Users, Wallet, Palette, LucideIcon } from "lucide-react";
+import {Crown, LucideIcon } from "lucide-react";
 
 
 interface Mentor {
@@ -28,7 +28,7 @@ export function MentorPage() {
             id: 2,
             name: "Mentor Name",
             bio:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            icon: Users,
+            icon: Crown,
             color: "violet",
             image: "mentor2",
             email:"mentor2@example.com"
@@ -37,7 +37,7 @@ export function MentorPage() {
             id: 3,
             name: "Mentor Name",
             bio:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            icon: Wallet,
+            icon: Crown,
             color: "purple",
             image: "mentor3",
             email:"mentor3@example.com"
