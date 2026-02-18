@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { LogOut, LogIn, Flower } from "lucide-react";
 
-type Page = "home" | "mission" | "board" | "partners" | "calendar" | "chat";
+type Page = "home" | "mission" | "board" | "volunteer" | "partners" | "calendar" | "chat";
 
 interface NavigationProps {
   currentPage: Page;
@@ -19,7 +19,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-2 bg-[rgba(221,79,221,0)]">
             <Flower className="w-8 h-8 text-violet-600" />
-            <span className="text-[rgb(145,78,228)] font-[Albert_Sans]">Divas in Tech</span>
+            <span className="text-[rgb(145,78,228)]">Divas in Tech</span>
           </div>
           
           <div className="flex items-center gap-6">
@@ -46,7 +46,23 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
               }`}
             >
               Board
+              </button>
+            <button
+              onClick={() => onNavigate('volunteer')}
+              className={`transition-colors ${
+                currentPage === 'volunteer' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Volunteer
             </button>
+            {/*<button
+              onClick={() => onNavigate('contact')}
+              className={`transition-colors ${
+                currentPage === 'contact' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Contact 
+            </button>*/}
             <button
               onClick={() => onNavigate('partners')}
               className={`transition-colors ${
