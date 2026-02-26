@@ -27,7 +27,7 @@ export function MentorPage() {
         {
             id: 2,
             name: "Mentor Name",
-            bio:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             icon: Crown,
             color: "violet",
             image: "mentor2",
