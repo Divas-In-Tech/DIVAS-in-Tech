@@ -1,6 +1,6 @@
 // Sign the User into the website
 
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseConnection';
 
 export const signInUser = async (email, password) => {
 

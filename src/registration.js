@@ -1,6 +1,6 @@
 // Supabase signs up the user and stores their information
 
-import { supabase } from './supabaseClient';
+import { supabase } from './supabaseConnection';
 
 export const registerUser = async (emailAddress, password, firstName, lastName, eventAttended) => {
 
