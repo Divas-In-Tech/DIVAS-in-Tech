@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { LogOut, LogIn, Flower } from "lucide-react";
 
-type Page = "home" | "mission" | "board" | "volunteer" | "partners" | "calendar" | "chat";
+type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" | "chat";
 
 interface NavigationProps {
   currentPage: Page;
@@ -48,12 +48,12 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
               Board
               </button>
             <button
-              onClick={() => onNavigate('volunteer')}
+              onClick={() => onNavigate('mentors')}
               className={`transition-colors ${
-                currentPage === 'volunteer' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+                currentPage === 'mentors' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
               }`}
             >
-              Volunteer
+              Mentors
             </button>
             {/*<button
               onClick={() => onNavigate('contact')}

@@ -55,7 +55,7 @@ export default function App() {
       {currentPage === "home" && <HomePage />}
       {currentPage === "mission" && <MissionPage />}
       {/*currentPage === "contact" && <ContactPage />*/}
-      {currentPage === "mentor" && <MentorPage />}
+      {currentPage === "mentors" && <MentorPage />}
       {currentPage === "board" && <BoardPage />}
       {currentPage === "partners" && <PartnersPage />}
       {currentPage === "calendar" && (
