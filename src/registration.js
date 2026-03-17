@@ -2,7 +2,7 @@
 
 import { supabase } from './supabaseConnection';
 
-export const registerUser = async (emailAddress, password, firstName, lastName, eventAttended) => {
+export const registerUser = async (email, password, firstName, lastName) => {
 
     // Register the User's login information
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -13,11 +13,10 @@ export const registerUser = async (emailAddress, password, firstName, lastName, 
     if (signUpError) throw signUpError;
     
     // Store the User's information
-    const { error: databaseError } = await supabase.from('Users').insert([{
+    const { error: databaseError } = await supabase.from('users').insert([{
         first_name: firstName,
         last_name: lastName,
-        email: emailAddress,
-        event: eventAttended,
+        email: email,
     }])
 
     if (databaseError) throw databaseError;
