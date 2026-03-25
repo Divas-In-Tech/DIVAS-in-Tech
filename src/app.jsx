@@ -5,7 +5,6 @@ import { MissionPage } from "./pages/MissionPage";
 import { BoardPage } from "./pages/BoardPage";
 import { PartnersPage } from "./pages/PartnersPage";
 import { CalendarPage } from "./pages/CalendarPage";
-import { ChatPage } from "./pages/ChatPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MentorPage } from "./pages/MentorPage";
 import { LoginDialog } from "./pages/LoginDialog";
@@ -63,9 +62,6 @@ export default function App() {
           isLoggedIn={isLoggedIn}
           onLoginPrompt={() => setShowLogin(true)}
         />
-      )}
-      {currentPage === "chat" && isLoggedIn && (
-        <ChatPage userName={userName} />
       )}
 
       <LoginDialog

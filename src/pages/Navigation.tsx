@@ -1,7 +1,7 @@
 import { Button } from "../components/ui/button";
 import { LogOut, LogIn, Flower } from "lucide-react";
 
-type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact"| "chat";
+type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact";
 
 interface NavigationProps {
   currentPage: Page;
@@ -79,16 +79,6 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
-            {isLoggedIn && (
-              <button
-                onClick={() => onNavigate('chat')}
-                className={`transition-colors ${
-                  currentPage === 'chat' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
-                }`}
-              >
-                Community Chat
-              </button>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
