@@ -6,7 +6,7 @@ import { BoardPage } from "./pages/BoardPage";
 import { PartnersPage } from "./pages/PartnersPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { ChatPage } from "./pages/ChatPage";
-{/*import { ContactPage } from "./pages/ContactPage";*/}
+import { ContactPage } from "./pages/ContactPage";
 import { MentorPage } from "./pages/MentorPage";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
@@ -54,7 +54,7 @@ export default function App() {
 
       {currentPage === "home" && <HomePage />}
       {currentPage === "mission" && <MissionPage />}
-      {/*currentPage === "contact" && <ContactPage />*/}
+      {currentPage === "contact" && <ContactPage />}
       {currentPage === "mentors" && <MentorPage />}
       {currentPage === "board" && <BoardPage />}
       {currentPage === "partners" && <PartnersPage />}

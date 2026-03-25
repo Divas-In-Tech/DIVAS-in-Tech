@@ -65,7 +65,7 @@ export function MentorPage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-50 via-violet-50 to-white">
-            {/* Hero Section */}
+            {/* title section */}
             <section className="bg-gradient-to-r from-purple-800 via-violet-700 to-purple-600 text-white py-20">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center">
