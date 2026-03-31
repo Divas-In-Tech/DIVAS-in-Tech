@@ -17,7 +17,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.3",
@@ -70,6 +71,7 @@
     "@types/react": "^19.2.7",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.22",
+    "jest": "^30.3.0",
     "postcss": "^8.5.6",
     "postcss-preset-env": "^10.5.0",
     "tailwindcss": "^4.1.17",
