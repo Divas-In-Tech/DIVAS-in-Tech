@@ -5,8 +5,6 @@ test.describe('Calendar', () => {
         await page.goto("/");
 
         await page.getByRole("button", { name: "Calendar" }).click();
-
-        await expect(page.getByRole("button", { name: "Community Chat"})).not.toBeVisible();
     });
 
     test("Able to see and click add event button when signed in", async ({ page }) => {

@@ -122,7 +122,7 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl text-purple-900 mb-4">Join Our Community</h2>
           <p className="text-xl text-purple-700 mb-8 max-w-2xl mx-auto">
-            Login to add events, connect with fellow volunteers through our community chat, and participate in our mission to make a difference.
+            Login to add events, connect with mentors, and participate in our mission to make a difference.
           </p>
         </div>
       </section>
