@@ -60,7 +60,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
           <DialogDescription className="text-center">
             {isSignUp 
               ? "Create an account to access community features" 
-              : "Login to access the calendar and community chat"}
+              : "Login to access the calendar and mentorship page"}
           </DialogDescription>
         </DialogHeader>
         
