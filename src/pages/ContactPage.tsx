@@ -22,7 +22,14 @@ export function ContactPage() {
                             <div>
 
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-800">Name</label>
-                                <input type="text" id="name" name="name" placeholder="Full name" required className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" />
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    name="name" 
+                                    placeholder="Full name" 
+                                    required 
+                                    className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                                 />
                             </div>
                             <div>
                             <label htmlFor="topic" className="block text-sm font-medium text-gray-800">Topic</label>
@@ -38,7 +45,14 @@ export function ContactPage() {
                             </div>
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                                <input type="email" id="email" name="email" placeholder="email@example.com" required className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" />
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    placeholder="email@example.com" 
+                                    required 
+                                    className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
