@@ -36,6 +36,7 @@ export function ContactPage() {
                                 <select
                                     id="topic"
                                     name="topic"
+                                    required
                                     className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
                                     <option value="">Select an option</option>
                                     <option value="general">General Inquiry</option>
