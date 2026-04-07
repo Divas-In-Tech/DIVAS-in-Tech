@@ -22,15 +22,51 @@ export function ContactPage() {
                             <div>
 
                                 <label htmlFor="name" className="block text-sm font-medium text-gray-800">Name</label>
-                                <input type="text" id="name" name="name" required className="mt-2 block w-full rounded-md py-2 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" />
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    name="name" 
+                                    placeholder="Full name" 
+                                    required 
+                                    className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                                 />
+                            </div>
+                            <div>
+                            <label htmlFor="topic" className="block text-sm font-medium text-gray-800">Topic</label>
+                                <select
+                                    id="topic"
+                                    name="topic"
+                                    required
+                                    className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50">
+                                    <option value="">Select an option</option>
+                                    <option value="media">Media Inquiry</option>
+                                    <option value="partnership">Partnership Opportunity</option>
+                                    <option value="support">Technical Support</option>
+                                    <option value="feedback">Feedback</option>
+                                    <option value="other">Other</option>
+                                </select>
                             </div>
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                                <input type="email" id="email" name="email" required className="mt-1 block w-full rounded-md py-2 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" />
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    name="email" 
+                                    placeholder="email@example.com" 
+                                    required 
+                                    className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
-                                <input type="text" id="message" name="message" required className="mt-1 block w-full rounded-md py-10 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50 " />
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    placeholder = "Let us know what you think!"
+                                    required
+                                    rows={5}
+                                    className="mt-2 block w-full rounded-md px-3 py-2 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                                />
                             </div>
                             <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md">
                                 Send Message
