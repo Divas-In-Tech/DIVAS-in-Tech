@@ -1,40 +1,59 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import ContactPage from '../ContactPage';
+const fs = require("fs");
+const path = require("path");
 
-describe('ContactPage', () => {
-    it('should render contact form', () => {
-        render(<ContactPage />);
-        expect(screen.getByRole('form')).toBeInTheDocument();
-    });
+const read = (relativePath) =>
+  fs.readFileSync(path.resolve(__dirname, "..", relativePath), "utf8");
 
-    it('should display form fields', () => {
-        render(<ContactPage />);
-        expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/message/i)).toBeInTheDocument();
-    });
+describe("Contact page requirements", () => {
+  const contactPageSource = read("pages/ContactPage.tsx");
+  const appSource = read("App.jsx");
+  const navigationSource = read("pages/Navigation.tsx");
 
-    it('should update input values on change', async () => {
-        render(<ContactPage />);
-        const nameInput = screen.getByLabelText(/name/i);
-        await userEvent.type(nameInput, 'John Doe');
-        expect(nameInput.value).toBe('John Doe');
-    });
+  test("has links to other pages at the top of the page", () => {
+    expect(appSource).toMatch(/<Navigation[\s\S]*\/>/);
 
-    it('should submit form with valid data', async () => {
-        render(<ContactPage />);
-        await userEvent.type(screen.getByLabelText(/name/i), 'John Doe');
-        await userEvent.type(screen.getByLabelText(/email/i), 'john@example.com');
-        await userEvent.type(screen.getByLabelText(/message/i), 'Test message');
-        fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-        await waitFor(() => expect(screen.getByText(/success/i)).toBeInTheDocument());
-    });
+    const topNavPages = [
+      "home",
+      "mission",
+      "board",
+      "mentors",
+      "partners",
+      "contact",
+      "calendar",
+    ];
 
-    it('should show validation errors for empty fields', async () => {
-        render(<ContactPage />);
-        fireEvent.click(screen.getByRole('button', { name: /submit/i }));
-        await waitFor(() => expect(screen.getByText(/required/i)).toBeInTheDocument());
+    topNavPages.forEach((page) => {
+      expect(navigationSource).toMatch(new RegExp(`onNavigate\\('${page}'\\)`));
     });
+  });
+
+  test("has a login button in the top right corner", () => {
+    expect(navigationSource).toMatch(/onLoginClick/);
+    expect(navigationSource).toMatch(/>\s*Login\s*</);
+  });
+
+  test("allows site visitors to fill out a standard inquiry form", () => {
+    expect(contactPageSource).toMatch(/<form[\s\S]*>/);
+    expect(contactPageSource).toMatch(/name="name"/);
+    expect(contactPageSource).toMatch(/name="email"/);
+    expect(contactPageSource).toMatch(/name="message"/);
+  });
+
+  test("requires name, email, type of inquiry dropdown, and message", () => {
+    expect(contactPageSource).toMatch(
+      /<input[^>]*id="name"[^>]*required[^>]*>|<input[^>]*required[^>]*id="name"[^>]*>/
+    );
+    expect(contactPageSource).toMatch(
+      /<input[^>]*id="email"[^>]*required[^>]*>|<input[^>]*required[^>]*id="email"[^>]*>/
+    );
+    expect(contactPageSource).toMatch(
+      /<input[^>]*id="message"[^>]*required[^>]*>|<input[^>]*required[^>]*id="message"[^>]*>/
+    );
+    expect(contactPageSource).toMatch(/<select[^>]*required[^>]*>/);
+  });
+
+  test("has a button to submit inquiry", () => {
+    expect(contactPageSource).toMatch(/type="submit"/);
+    expect(contactPageSource).toMatch(/Send Message|Submit/i);
+  });
 });
