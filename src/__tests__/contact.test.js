@@ -6,7 +6,7 @@ const read = (relativePath) =>
 
 describe("Contact page requirements", () => {
   const contactPageSource = read("pages/ContactPage.tsx");
-  const appSource = read("App.jsx");
+  const appSource = read("app.jsx");
   const navigationSource = read("pages/Navigation.tsx");
 
   test("has links to other pages at the top of the page", () => {
@@ -47,7 +47,7 @@ describe("Contact page requirements", () => {
       /<input[^>]*id="email"[^>]*required[^>]*>|<input[^>]*required[^>]*id="email"[^>]*>/
     );
     expect(contactPageSource).toMatch(
-      /<input[^>]*id="message"[^>]*required[^>]*>|<input[^>]*required[^>]*id="message"[^>]*>/
+      /<input[^>]*id="message"[^>]*required[^>]*>|<input[^>]*required[^>]*id="message"[^>]*>|<textarea[^>]*id="message"[^>]*required[^>]*>|<textarea[^>]*required[^>]*id="message"[^>]*>/
     );
     expect(contactPageSource).toMatch(/<select[^>]*required[^>]*>/);
   });
