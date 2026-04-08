@@ -9,5 +9,7 @@ module.exports = defineConfig({
     setupFiles: "./src/setupTests.js",
     include: ["src/**/*.{test,spec}.{js,jsx}"],
     exclude: ["node_modules", "e2e"],
+    reporters: ['json', 'default'],
+    outputFile: 'test-results.json',
   },
 });
