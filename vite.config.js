@@ -1,9 +1,13 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+const { defineConfig } = require("vite");
+const react = require("@vitejs/plugin-react");
 
-export default defineConfig({
-    plugins: [react()],
-    server: {
-    historyApiFallback: true
-  }
-})
+module.exports = defineConfig({
+  plugins: [react()],
+  test: {
+    environment: "jsdom",
+    globals: true,
+    setupFiles: "./src/setupTests.js",
+    include: ["src/**/*.{test,spec}.{js,jsx}"],
+    exclude: ["node_modules", "e2e"],
+  },
+});

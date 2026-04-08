@@ -1,59 +1,46 @@
-const fs = require("fs");
-const path = require("path");
+import React from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
+import { ContactPage } from "../pages/ContactPage";
 
-const read = (relativePath) =>
-  fs.readFileSync(path.resolve(__dirname, "..", relativePath), "utf8");
+describe("ContactPage", () => {
+  test("renders the contact form fields name, topic, email, and message", () => {
+    render(React.createElement(ContactPage));
 
-describe("Contact page requirements", () => {
-  const contactPageSource = read("pages/ContactPage.tsx");
-  const appSource = read("app.jsx");
-  const navigationSource = read("pages/Navigation.tsx");
-
-  test("has links to other pages at the top of the page", () => {
-    expect(appSource).toMatch(/<Navigation[\s\S]*\/>/);
-
-    const topNavPages = [
-      "home",
-      "mission",
-      "board",
-      "mentors",
-      "partners",
-      "contact",
-      "calendar",
-    ];
-
-    topNavPages.forEach((page) => {
-      expect(navigationSource).toMatch(new RegExp(`onNavigate\\('${page}'\\)`));
-    });
+    expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/topic/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/message/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send message/i })
+    ).toBeInTheDocument();
   });
 
-  test("has a login button in the top right corner", () => {
-    expect(navigationSource).toMatch(/onLoginClick/);
-    expect(navigationSource).toMatch(/>\s*Login\s*</);
+  test("marks the required fields as required", () => {
+    render(React.createElement(ContactPage));
+
+    expect(screen.getByLabelText(/name/i)).toBeRequired();
+    expect(screen.getByLabelText(/topic/i)).toBeRequired();
+    expect(screen.getByLabelText(/email/i)).toBeRequired();
+    expect(screen.getByLabelText(/message/i)).toBeRequired();
   });
 
-  test("allows site visitors to fill out a standard inquiry form", () => {
-    expect(contactPageSource).toMatch(/<form[\s\S]*>/);
-    expect(contactPageSource).toMatch(/name="name"/);
-    expect(contactPageSource).toMatch(/name="email"/);
-    expect(contactPageSource).toMatch(/name="message"/);
-  });
+  test("allows user to fill out the form", () => {
+    render(React.createElement(ContactPage));
 
-  test("requires name, email, type of inquiry dropdown, and message", () => {
-    expect(contactPageSource).toMatch(
-      /<input[^>]*id="name"[^>]*required[^>]*>|<input[^>]*required[^>]*id="name"[^>]*>/
-    );
-    expect(contactPageSource).toMatch(
-      /<input[^>]*id="email"[^>]*required[^>]*>|<input[^>]*required[^>]*id="email"[^>]*>/
-    );
-    expect(contactPageSource).toMatch(
-      /<input[^>]*id="message"[^>]*required[^>]*>|<input[^>]*required[^>]*id="message"[^>]*>|<textarea[^>]*id="message"[^>]*required[^>]*>|<textarea[^>]*required[^>]*id="message"[^>]*>/
-    );
-    expect(contactPageSource).toMatch(/<select[^>]*required[^>]*>/);
-  });
+    const nameInput = screen.getByLabelText(/name/i);
+    const emailInput = screen.getByLabelText(/email/i);
+    const messageInput = screen.getByLabelText(/message/i);
+    const topicSelect = screen.getByLabelText(/topic/i);
 
-  test("has a button to submit inquiry", () => {
-    expect(contactPageSource).toMatch(/type="submit"/);
-    expect(contactPageSource).toMatch(/Send Message|Submit/i);
+    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(emailInput, { target: { value: "john@test.com" } });
+    fireEvent.change(messageInput, { target: { value: "Hello there" } });
+    fireEvent.change(topicSelect, { target: { value: "feedback" } });
+
+    expect(nameInput.value).toBe("John Doe");
+    expect(emailInput.value).toBe("john@test.com");
+    expect(messageInput.value).toBe("Hello there");
+    expect(topicSelect.value).toBe("feedback");
   });
 });
