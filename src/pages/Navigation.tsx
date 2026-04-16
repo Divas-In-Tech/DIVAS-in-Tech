@@ -1,12 +1,13 @@
 import { Button } from "../components/ui/button";
 import { LogOut, LogIn, Flower } from "lucide-react";
 
-type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact";
+type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact" | "admin";
 
 interface NavigationProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   onLoginClick: () => void;
   onLogout: () => void;
   userName: string;
@@ -79,6 +80,17 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
+            {(1 == 1) ?(
+              <button
+              onClick={() => onNavigate('admin')}
+              className={`transition-colors ${
+                currentPage === 'admin' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Admin Dashboard
+            </button>
+            )
+            : null}
           </div>
 
           <div className="flex items-center gap-3">

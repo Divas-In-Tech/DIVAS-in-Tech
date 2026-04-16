@@ -7,6 +7,7 @@ import { PartnersPage } from "./pages/PartnersPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MentorPage } from "./pages/MentorPage";
+import { AdminDashboard } from "./pages/AdminDashboard";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAmdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
 
@@ -26,6 +28,7 @@ export default function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setIsAdmin(false);
     setUserName("");
     setCurrentPage("home");
     toast.success("Successfully logged out");
@@ -46,6 +49,7 @@ export default function App() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         isLoggedIn={isLoggedIn}
+        isAdmin={isAmdmin}
         onLoginClick={() => setShowLogin(true)}
         onLogout={handleLogout}
         userName={userName}
@@ -63,6 +67,7 @@ export default function App() {
           onLoginPrompt={() => setShowLogin(true)}
         />
       )}
+      {currentPage === "admin" && <AdminDashboard />}
 
       <LoginDialog
         open={showLogin}
