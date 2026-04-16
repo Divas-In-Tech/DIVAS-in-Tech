@@ -137,8 +137,8 @@ export function AdminDashboard({
                       <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">
                         <div className="flex items-center gap-2">
-                          {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
                           <span>{user.createdAt}</span>
+                          {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
