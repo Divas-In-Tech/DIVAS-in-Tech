@@ -60,11 +60,19 @@ export function AdminDashboard({
       status: "Pending",
       joinedAt: "04/16/2026",
     },
+    {
+      firstName: "John",
+      lastName: "Smith",
+      email: "john.smith2@divasintech.org",
+      accountType: "Student",
+      status: "Pending",
+      joinedAt: "04/01/2026",
+    },
   ],
 }: AdminDashboardProps) {
   const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; {/*14 days in milliseconds*/}
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<(typeof searchableUsers)[number] | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<typeof searchableUsers>([]);
   const [searchAttempted, setSearchAttempted] = useState(false);
 
   const handleSearch = () => {
@@ -73,16 +81,16 @@ export function AdminDashboard({
     setSearchAttempted(true);
 
     if (!normalizedQuery) {
-      setSelectedUser(null);
+      setSelectedUsers([]);
       return;
     }
 
-    const matchedUser = searchableUsers.find((user) => {
+    const matchedUsers = searchableUsers.filter((user) => {
       const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
       return fullName.includes(normalizedQuery) || user.email.toLowerCase().includes(normalizedQuery);
     });
 
-    setSelectedUser(matchedUser ?? null);
+    setSelectedUsers(matchedUsers);
   };
 
   return (
@@ -96,6 +104,7 @@ export function AdminDashboard({
         </div>
       </section>
 
+      
       {/* Pending Users Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -179,37 +188,44 @@ export function AdminDashboard({
               </button>
             </div>
 
-            {selectedUser ? (
-              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2 text-sm text-gray-700">
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedUser.firstName} {selectedUser.lastName}
-                    </p>
-                    <p>{selectedUser.email}</p>
-                    <p>Account Type: {selectedUser.accountType}</p>
-                    <p>Status: {selectedUser.status}</p>
-                    <p>Joined: {selectedUser.joinedAt}</p>
+            {selectedUsers.length > 0 ? (
+              <div className="mt-6 space-y-4">
+                {selectedUsers.map((user) => (
+                  <div
+                    key={`${user.email}-${user.joinedAt}`}
+                    className="rounded-lg border border-gray-200 bg-gray-50 p-5"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <p className="text-lg font-semibold text-gray-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                        <p>{user.email}</p>
+                        <p>Account Type: {user.accountType}</p>
+                        <p>Status: {user.status}</p>
+                        <p>Joined: {user.joinedAt}</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          aria-label={`Promote ${user.firstName} ${user.lastName} to admin`}
+                          className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                        >
+                          <Crown className="h-4 w-4" />
+                          Promote to Admin
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Deactivate ${user.firstName} ${user.lastName} account`}
+                          className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                          <UserX className="h-4 w-4" />
+                          Deactivate Account
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="button"
-                      aria-label={`Promote ${selectedUser.firstName} ${selectedUser.lastName} to admin`}
-                      className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
-                    >
-                      <Crown className="h-4 w-4" />
-                      Promote to Admin
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Deactivate ${selectedUser.firstName} ${selectedUser.lastName} account`}
-                      className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                    >
-                      <UserX className="h-4 w-4" />
-                      Deactivate Account
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
             ) : searchAttempted ? (
               <p className="mt-4 text-sm text-gray-500">

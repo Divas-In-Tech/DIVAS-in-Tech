@@ -113,7 +113,44 @@ describe("AdminDashboard", () => {
     expect(screen.getByText(/account type: mentor/i)).toBeInTheDocument();
     expect(screen.getByText(/status: active/i)).toBeInTheDocument();
   });
+  test("successfully searches for a user with a duplicate name but different email", () => {
+    const mockSearchableUsers = [
+      {
+        firstName: "Alex",
+        lastName: "Smith",
+        email: "a.smith@email.com",
+        accountType: "Volunteer",
+        status: "Active",
+        joinedAt: "01/15/2026",
+      },
+      {
+        firstName: "Alex",
+        lastName: "Smith",
+        email: "alex.smith@email.com",
+        accountType: "Mentor",
+        status: "Pending",
+        joinedAt: "02/20/2026",
+      }
+    ];
 
+    render(
+      React.createElement(AdminDashboard, {
+        searchableUsers: mockSearchableUsers,
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+      target: { value: "alex smith" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+
+    expect(screen.getByText("a.smith@email.com")).toBeInTheDocument();
+    expect(screen.getByText(/account type: volunteer/i)).toBeInTheDocument();
+    expect(screen.getByText(/status: active/i)).toBeInTheDocument();
+    expect(screen.getByText("alex.smith@email.com")).toBeInTheDocument();
+    expect(screen.getByText(/account type: mentor/i)).toBeInTheDocument();
+    expect(screen.getByText(/status: pending/i)).toBeInTheDocument();
+  });
   test("unsuccessfully searches for a user", () => {
     const mockSearchableUsers = [
       {
