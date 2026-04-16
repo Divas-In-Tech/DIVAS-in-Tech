@@ -80,6 +80,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
+            {/*TODO: Is this where I would want to put logic to only show admin dashboard if the user is admin? See app.jsx for other location*/}
             {(1 == 1) ?(
               <button
               onClick={() => onNavigate('admin')}
