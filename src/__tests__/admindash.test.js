@@ -1,9 +1,13 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { AdminDashboard } from "../pages/AdminDashboard";
 
 describe("AdminDashboard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   test("renders pending user data passed into the table", () => {
     const mockPendingUsers = [
       {
@@ -11,14 +15,14 @@ describe("AdminDashboard", () => {
         lastName: "Johnson",
         accountType: "Volunteer",
         eventAttended: "DIVAS Tech Summit",
-        createdAt: "2026-04-02",
+        createdAt: "02/04/2026",
       },
       {
         firstName: "Maya",
         lastName: "Patel",
         accountType: "Mentor",
         eventAttended: "Spring Coding Workshop",
-        createdAt: "2026-04-05",
+        createdAt: "04/05/2026",
       },
     ];
 
@@ -39,19 +43,103 @@ describe("AdminDashboard", () => {
       screen.getByRole("columnheader", { name: /event attended/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("columnheader", { name: /date of account creation/i })
+      screen.getByRole("columnheader", { name: /pending since/i })
     ).toBeInTheDocument();
 
     expect(screen.getByText("Avery")).toBeInTheDocument();
     expect(screen.getByText("Johnson")).toBeInTheDocument();
     expect(screen.getByText("Volunteer")).toBeInTheDocument();
     expect(screen.getByText("DIVAS Tech Summit")).toBeInTheDocument();
-    expect(screen.getByText("2026-04-02")).toBeInTheDocument();
+    expect(screen.getByText("02/04/2026")).toBeInTheDocument();
 
     expect(screen.getByText("Maya")).toBeInTheDocument();
     expect(screen.getByText("Patel")).toBeInTheDocument();
     expect(screen.getByText("Mentor")).toBeInTheDocument();
     expect(screen.getByText("Spring Coding Workshop")).toBeInTheDocument();
-    expect(screen.getByText("2026-04-05")).toBeInTheDocument();
+    expect(screen.getByText("04/05/2026")).toBeInTheDocument();
+  });
+
+  test("marks users pending for 14 days or more with a warning icon and red row styling", () => {
+    vi.spyOn(Date, "now").mockReturnValue(
+      new Date("04/16/2026").getTime()
+    );
+
+    render(
+      React.createElement(AdminDashboard, {
+        pendingUsers: [
+          {
+            firstName: "Jordan",
+            lastName: "Lee",
+            accountType: "Volunteer",
+            eventAttended: "Hack Night",
+            createdAt: "04/02/2026",
+          },
+        ],
+      })
+    );
+
+    expect(
+      screen.getByLabelText(/account pending for more than 14 days/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText("04/02/2026").closest("tr")).toHaveClass(
+      "bg-red-200"
+    );
+  });
+
+  test("successfully searches for a user", () => {
+    const mockSearchableUsers = [
+      {
+        firstName: "Taylor",
+        lastName: "Brooks",
+        email: "taylor.brooks@divasintech.org",
+        accountType: "Mentor",
+        status: "Active",
+        joinedAt: "03/10/2026",
+      },
+    ];
+
+    render(
+      React.createElement(AdminDashboard, {
+        searchableUsers: mockSearchableUsers,
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+      target: { value: "taylor brooks" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+
+    expect(screen.getByText("taylor.brooks@divasintech.org")).toBeInTheDocument();
+    expect(screen.getByText(/account type: mentor/i)).toBeInTheDocument();
+    expect(screen.getByText(/status: active/i)).toBeInTheDocument();
+  });
+
+  test("unsuccessfully searches for a user", () => {
+    const mockSearchableUsers = [
+      {
+        firstName: "Morgan",
+        lastName: "Price",
+        email: "morgan.price@divasintech.org",
+        accountType: "Volunteer",
+        status: "Pending",
+        joinedAt: "02/21/2026",
+      },
+    ];
+
+    render(
+      React.createElement(AdminDashboard, {
+        searchableUsers: mockSearchableUsers,
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+      target: { value: "a user who does not exist" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+
+    expect(
+      screen.getByText(/no account matched that name or email\./i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText("morgan.price@divasintech.org")).not.toBeInTheDocument();
   });
 });

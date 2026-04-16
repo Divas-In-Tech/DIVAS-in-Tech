@@ -14,8 +14,18 @@ export type PendingUser = {
   createdAt: string;
 };
 
+export type SearchableUser = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  accountType: string;
+  status: string;
+  joinedAt: string;
+};
+
 type AdminDashboardProps = {
   pendingUsers?: PendingUser[];
+  searchableUsers?: SearchableUser[];
 };
 
 export function AdminDashboard({
@@ -33,9 +43,7 @@ export function AdminDashboard({
     eventAttended: "Workshop 2",
     createdAt: "04/16/2026"
   }],
-}: AdminDashboardProps) {
-  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; {/*14 days in milliseconds*/}
-  const searchableUsers = [
+  searchableUsers = [
     {
       firstName: "Janie",
       lastName: "Doe",
@@ -52,7 +60,9 @@ export function AdminDashboard({
       status: "Pending",
       joinedAt: "04/16/2026",
     },
-  ];
+  ],
+}: AdminDashboardProps) {
+  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; {/*14 days in milliseconds*/}
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<(typeof searchableUsers)[number] | null>(null);
   const [searchAttempted, setSearchAttempted] = useState(false);
@@ -104,7 +114,7 @@ export function AdminDashboard({
               <tbody className="divide-y divide-gray-200">
                 {pendingUsers.length > 0 ? (
                   pendingUsers.map((user) => {
-                    const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() > warningThresholdMs;
+                    const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() >= warningThresholdMs;
 
                     return (
                     <tr
