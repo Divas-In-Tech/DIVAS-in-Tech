@@ -1,6 +1,5 @@
 import { Card } from "../components/ui/card";
-import { Heart, Users, Target, HandHeart } from "lucide-react";
-import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { Heart, Users, Target, HandHeart, TriangleAlert } from "lucide-react";
 
 export type PendingUser = {
   firstName: string;
@@ -20,9 +19,17 @@ export function AdminDashboard({
     lastName: "Doe",
     accountType: "Student",
     eventAttended: "Workshop 1",
-    createdAt: "2024-06-01"
+    createdAt: "01/06/2024"
+  },
+  {
+    firstName: "John",
+    lastName: "Smith",
+    accountType: "Student",
+    eventAttended: "Workshop 2",
+    createdAt: "04/16/2026"
   }],
 }: AdminDashboardProps) {
+  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; {/*14 days in milliseconds*/}
 
   return (
     <div className="min-h-screen">
@@ -47,20 +54,32 @@ export function AdminDashboard({
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Last Name</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Account Type</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Event Attended</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date of Account Creation</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Pending Since</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {pendingUsers.length > 0 ? (
-                  pendingUsers.map((user) => (
-                    <tr key={`${user.firstName}-${user.lastName}-${user.createdAt}`} className="hover:bg-gray-50">
+                  pendingUsers.map((user) => {
+                    const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() > warningThresholdMs;
+
+                    return (
+                    <tr
+                      key={`${user.firstName}-${user.lastName}-${user.createdAt}`}
+                      className={isOlderThan14Days ? "bg-red-200 hover:bg-red-300" : "hover:bg-gray-50"}
+                    >
                       <td className="px-6 py-4 text-sm text-gray-700">{user.firstName}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{user.lastName}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{user.accountType}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.createdAt}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <div className="flex items-center gap-2">
+                          {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
+                          <span>{user.createdAt}</span>
+                        </div>
+                      </td>
                     </tr>
-                  ))
+                    );
+                  })
                 ) : (
                   <tr>
                     <td className="px-6 py-4 text-sm text-gray-500" colSpan={5}>
