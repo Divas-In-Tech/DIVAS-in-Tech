@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card } from "../components/ui/card";
-import { Crown, Search, TriangleAlert, UserX} from "lucide-react";
+import { Crown, Search, TriangleAlert, UserX, UserCheck} from "lucide-react";
 
 {/* TODO: Most of this right below here is prop data used to test. Doesn't
   guarantee future data appearance-- must be changed to match
@@ -104,7 +104,7 @@ export function AdminDashboard({
         </div>
       </section>
 
-      
+
       {/* Pending Users Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -118,6 +118,7 @@ export function AdminDashboard({
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Account Type</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Event Attended</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Pending Since</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -140,12 +141,28 @@ export function AdminDashboard({
                           <span>{user.createdAt}</span>
                         </div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        <div className="flex items-center gap-3 whitespace-nowrap">
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                          >
+                            <UserCheck className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                          >
+                            <UserX className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td className="px-6 py-4 text-sm text-gray-500" colSpan={5}>
+                    <td className="px-6 py-4 text-sm text-gray-500" colSpan={6}>
                       No pending users to display.
                     </td>
                   </tr>
