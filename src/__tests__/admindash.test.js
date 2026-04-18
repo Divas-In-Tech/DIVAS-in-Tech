@@ -104,7 +104,7 @@ describe("AdminDashboard", () => {
       })
     );
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
       target: { value: "taylor brooks" },
     });
     fireEvent.click(screen.getByRole("button", { name: /search/i }));
@@ -139,7 +139,7 @@ describe("AdminDashboard", () => {
       })
     );
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
       target: { value: "alex smith" },
     });
     fireEvent.click(screen.getByRole("button", { name: /search/i }));
@@ -169,13 +169,13 @@ describe("AdminDashboard", () => {
       })
     );
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name or email/i), {
+    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
       target: { value: "a user who does not exist" },
     });
     fireEvent.click(screen.getByRole("button", { name: /search/i }));
 
     expect(
-      screen.getByText(/no account matched that name or email\./i)
+      screen.getByText(/no account matched that name\./i)
     ).toBeInTheDocument();
     expect(screen.queryByText("morgan.price@divasintech.org")).not.toBeInTheDocument();
   });
