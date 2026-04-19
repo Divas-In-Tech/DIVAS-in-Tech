@@ -13,7 +13,7 @@ interface NavigationProps {
   userName: string;
 }
 
-export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, onLogout, userName }: NavigationProps) {
+export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLoginClick, onLogout, userName }: NavigationProps) {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,8 +80,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
-            {/*TODO: Is this where I would want to put logic to only show admin dashboard if the user is admin? See app.jsx for other location*/}
-            {(1 == 1) ?(
+            {isAdmin ? (
               <button
               onClick={() => onNavigate('admin')}
               className={`transition-colors ${

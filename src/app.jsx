@@ -13,9 +13,10 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
 export default function App() {
+  const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
   const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAmdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(defaultIsAdmin); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
 
@@ -28,18 +29,18 @@ export default function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    setIsAdmin(false);
+    setIsAdmin(defaultIsAdmin);
     setUserName("");
     setCurrentPage("home");
     toast.success("Successfully logged out");
   };
 
   const handleNavigate = (page) => {
-    if (page === "chat" && !isLoggedIn) {
-      toast.error("Please login to access the community chat");
-      setShowLogin(true);
+    if (page === "admin" && !isAdmin) {
+      toast.error("Admin access is required to view the dashboard");
       return;
     }
+
     setCurrentPage(page);
   };
 
@@ -49,7 +50,7 @@ export default function App() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         isLoggedIn={isLoggedIn}
-        isAdmin={isAmdmin}
+        isAdmin={isAdmin}
         onLoginClick={() => setShowLogin(true)}
         onLogout={handleLogout}
         userName={userName}
@@ -67,7 +68,7 @@ export default function App() {
           onLoginPrompt={() => setShowLogin(true)}
         />
       )}
-      {currentPage === "admin" && <AdminDashboard />}
+      {currentPage === "admin" && isAdmin && <AdminDashboard />}
 
       <LoginDialog
         open={showLogin}
