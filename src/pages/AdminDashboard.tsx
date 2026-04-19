@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Calendar } from "../components/ui/calendar";
 import { Card } from "../components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Calendar as CalendarIcon, Crown, Link as LinkIcon, MapPin, Search, TriangleAlert, UserCheck, UserX, Users } from "lucide-react";
 
 /* TODO: Most of this right below here is prop data used to test. Doesn't
@@ -31,6 +33,13 @@ type AdminDashboardProps = {
   pendingUsers?: PendingUser[];
   searchableUsers?: SearchableUser[];
 };
+
+type ConfirmationAction = "accept" | "reject" | "promote" | "delete";
+
+type ConfirmationState = {
+  action: ConfirmationAction;
+  targetLabel: string;
+} | null;
 
 type AdminEvent = {
   id: string;
@@ -92,6 +101,8 @@ export function AdminDashboard({
   const [searchAttempted, setSearchAttempted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
+  const [confirmationCode, setConfirmationCode] = useState("");
   const [newEvent, setNewEvent] = useState({
     name: "",
     description: "",
@@ -135,6 +146,55 @@ export function AdminDashboard({
   };
 
   const eventsForSelectedDate = getEventsForDate(selectedDate);
+
+  const closeConfirmationDialog = () => {
+    setConfirmationState(null);
+    setConfirmationCode("");
+  };
+
+  const openConfirmationDialog = (
+    action: ConfirmationAction,
+    targetLabel: string
+  ) => {
+    setConfirmationState({ action, targetLabel });
+    setConfirmationCode("");
+  };
+
+  const requiresConfirmationCode =
+    confirmationState?.action === "promote" || confirmationState?.action === "delete";
+
+  const actionLabels: Record<ConfirmationAction, { title: string; confirm: string; description: string; codeLabel?: string }> = {
+    accept: {
+      title: "Activate this account?",
+      confirm: "Confirm",
+      description: "This will approve the pending account:",
+    },
+    reject: {
+      title: "Reject this account?",
+      confirm: "Confirm",
+      description: "This will reject the pending account:",
+    },
+    promote: {
+      title: "Promote this user to admin?",
+      confirm: "Confirm",
+      description: "This will grant this account elevated admin access:",
+      codeLabel: "Confirmation code",
+    },
+    delete: {
+      title: "Delete this account?",
+      confirm: "Confirm",
+      description: "This will remove this account:",
+      codeLabel: "Confirmation code",
+    },
+  };
+
+  const handleConfirmAction = () => {
+    if (requiresConfirmationCode && !confirmationCode.trim()) {
+      return;
+    }
+
+    closeConfirmationDialog();
+  };
 
   const handleCreateEvent = () => {
     if (
@@ -224,18 +284,46 @@ export function AdminDashboard({
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-700">
                         <div className="flex items-center gap-3 whitespace-nowrap">
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
-                          >
-                            <UserCheck className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                          >
-                            <UserX className="h-4 w-4" />
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Activate ${user.firstName} ${user.lastName}`}
+                                onClick={() =>
+                                  openConfirmationDialog(
+                                    "accept",
+                                    `${user.firstName} ${user.lastName}`
+                                  )
+                                }
+                                className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                              >
+                                <UserCheck className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Activate {user.firstName} {user.lastName}
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Reject ${user.firstName} ${user.lastName}`}
+                                onClick={() =>
+                                  openConfirmationDialog(
+                                    "reject",
+                                    `${user.firstName} ${user.lastName}`
+                                  )
+                                }
+                                className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                              >
+                                <UserX className="h-4 w-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Reject {user.firstName} {user.lastName}
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>
@@ -307,6 +395,12 @@ export function AdminDashboard({
                         <button
                           type="button"
                           aria-label={`Promote ${user.firstName} ${user.lastName} to admin`}
+                          onClick={() =>
+                            openConfirmationDialog(
+                              "promote",
+                              `${user.firstName} ${user.lastName}`
+                            )
+                          }
                           className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
                         >
                           <Crown className="h-4 w-4" />
@@ -315,6 +409,12 @@ export function AdminDashboard({
                         <button
                           type="button"
                           aria-label={`Deactivate ${user.firstName} ${user.lastName} account`}
+                          onClick={() =>
+                            openConfirmationDialog(
+                              "delete",
+                              `${user.firstName} ${user.lastName}`
+                            )
+                          }
                           className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
                         >
                           <UserX className="h-4 w-4" />
@@ -333,6 +433,62 @@ export function AdminDashboard({
           </Card>
         </div>
       </section>
+
+      <Dialog
+        open={Boolean(confirmationState)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            closeConfirmationDialog();
+          }
+        }}
+      >
+        <DialogContent className="border-pink-100 sm:max-w-md">
+          {confirmationState ? (
+            <>
+              <DialogHeader className="pr-8">
+                <DialogTitle className="text-gray-900">
+                  {actionLabels[confirmationState.action].title}
+                </DialogTitle>
+                <DialogDescription className="text-gray-600">
+                  {actionLabels[confirmationState.action].description} <span className="font-medium text-gray-800">{confirmationState.targetLabel}</span>
+                </DialogDescription>
+              </DialogHeader>
+
+              {requiresConfirmationCode ? (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmation-code">
+                    {actionLabels[confirmationState.action].codeLabel}
+                  </Label>
+                  <Input
+                    id="confirmation-code"
+                    value={confirmationCode}
+                    onChange={(event) => setConfirmationCode(event.target.value)}
+                    placeholder="Enter confirmation code"
+                  />
+                </div>
+              ) : null}
+
+              <DialogFooter className="mt-2">
+                <button
+                  type="button"
+                  onClick={closeConfirmationDialog}
+                  className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAction}
+                  disabled={requiresConfirmationCode && !confirmationCode.trim()}
+                  className="inline-flex items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
+                >
+                  {actionLabels[confirmationState.action].confirm}
+                </button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       {/* Caldenar Management Section */}
       <section className="py-16">

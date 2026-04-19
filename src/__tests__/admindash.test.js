@@ -179,4 +179,82 @@ describe("AdminDashboard", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("morgan.price@divasintech.org")).not.toBeInTheDocument();
   });
+
+  test("opens an accept confirmation dialog and closes it with cancel", () => {
+    render(React.createElement(AdminDashboard));
+
+    fireEvent.click(screen.getByRole("button", { name: /activate jane doe/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /activate this account\?/i })
+    ).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", { name: /^confirm$/i });
+    expect(confirmButton).toHaveClass("bg-pink-700");
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    expect(
+      screen.queryByRole("heading", { name: /activate this account\?/i })
+    ).not.toBeInTheDocument();
+  });
+
+  test("opens a reject confirmation dialog and closes it with the top corner x", () => {
+    render(React.createElement(AdminDashboard));
+
+    fireEvent.click(screen.getByRole("button", { name: /reject jane doe/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /reject this account\?/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+    expect(
+      screen.queryByRole("heading", { name: /reject this account\?/i })
+    ).not.toBeInTheDocument();
+  });
+
+  test("requires a confirmation code for promote actions", () => {
+    render(React.createElement(AdminDashboard));
+
+    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+      target: { value: "janie doe" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /promote janie doe to admin/i })
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /promote this user to admin\?/i })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirmation code/i)).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", { name: /^confirm$/i });
+    expect(confirmButton).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/confirmation code/i), {
+      target: { value: "PROMOTE-123" },
+    });
+
+    expect(confirmButton).not.toBeDisabled();
+  });
+
+  test("requires a confirmation code for delete actions", () => {
+    render(React.createElement(AdminDashboard));
+
+    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+      target: { value: "janie doe" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /deactivate janie doe account/i })
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /delete this account\?/i })
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirmation code/i)).toBeInTheDocument();
+  });
 });
