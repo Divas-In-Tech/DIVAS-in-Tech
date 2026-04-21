@@ -2,6 +2,10 @@ import { Card } from "../components/ui/card";
 import {Button} from "../components/ui/button";
 import {Crown, LucideIcon } from "lucide-react";
 
+{/*Only make this page appear when logged in for all types of users, 
+when admin is logged in they are able to remove or add mentors.
+- make a button where once the user presses the button a message box and email 
+    will appears and they are able to contact the person they chose*/}
 
 interface Mentor {
   id: number;
@@ -110,7 +114,9 @@ export function MentorPage() {
                                         >
                                         <Icon className="w-4 h-4 mr-2" />
                                         Contact Mentor
-                                    </Button>*/}
+                                    </Button>
+                                    
+                                    Would send a direct message to the mentor thorugh their email once they press to contact them*/}
                                 </Card>
                             );
                         })}

@@ -47,6 +47,8 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Board
               </button>
+        {/*Mentor Page down below V */}
+            {isLoggedIn &&(
             <button
               onClick={() => onNavigate('mentors')}
               className={`transition-colors ${
@@ -55,6 +57,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Mentors
             </button>
+            )}
             <button
               onClick={() => onNavigate('partners')}
               className={`transition-colors ${
