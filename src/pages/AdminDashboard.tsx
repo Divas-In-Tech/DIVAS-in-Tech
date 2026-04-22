@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar } from "../components/ui/calendar";
 import { Card } from "../components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -96,13 +96,21 @@ export function AdminDashboard({
   ],
 }: AdminDashboardProps) {
   const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pendingUsers]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<typeof searchableUsers>([]);
   const [searchAttempted, setSearchAttempted] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
+
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
   const [confirmationCode, setConfirmationCode] = useState("");
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
   const [newEvent, setNewEvent] = useState({
     name: "",
     description: "",
@@ -112,6 +120,13 @@ export function AdminDashboard({
     capacity: "",
     unlimited: false,
   });
+
+  const totalPages = Math.ceil(pendingUsers.length / pageSize);
+  //TODO: Needs to sort by date eventually
+  const paginatedUsers = pendingUsers.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const handleSearch = () => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -264,7 +279,7 @@ export function AdminDashboard({
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {pendingUsers.length > 0 ? (
-                  pendingUsers.map((user) => {
+                  paginatedUsers.map((user) => {
                     const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() >= warningThresholdMs;
 
                     return (
@@ -338,6 +353,27 @@ export function AdminDashboard({
                 )}
               </tbody>
             </table>
+            <div className="flex items-center justify-between px-6 py-4">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded bg-gray-100 disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded bg-gray-100 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </section>
