@@ -2,19 +2,14 @@ import { Card } from "../components/ui/card";
 import {Button} from "../components/ui/button";
 import {Crown, LucideIcon } from "lucide-react";
 
-{/*Only make this page appear when logged in for all types of users, 
-when admin is logged in they are able to remove or add mentors.
-- make a button where once the user presses the button a message box and email 
-    will appears and they are able to contact the person they chose*/}
-
+{/*Only make this page appear when logged in for all types of users and be able to contact them through email*/}
 interface Mentor {
   id: number;
   name: string;
-  email:string;
   bio: string;
   icon: LucideIcon;
   color: "purple" | "violet";
-  image: string;
+  email:string;
 }
 
 export function MentorPage() {
@@ -22,29 +17,26 @@ export function MentorPage() {
     {
             id: 1,
             name: "Mentor Name",
-            email:"mentor1@example.com",
             bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             icon: Crown,
             color: "purple",
-            image: "mentor1"
+            email:"mentor1@example.com",
         },
         {
             id: 2,
             name: "Mentor Name",
-            email:"mentor2@example.com",
             bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             icon: Crown,
             color: "violet",
-            image: "mentor2"
+            email:"mentor2@example.com",
         },
         {
             id: 3,
             name: "Mentor Name",
-            email:"mentor3@example.com",
             bio:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
             icon: Crown,
             color: "purple",
-            image: "mentor3"
+            email:"mentor3@example.com",
         },
     ];
 
@@ -107,8 +99,7 @@ export function MentorPage() {
                                     <p className = "text-gray-700 leading-relaxed mb-6">
                                         {mentor.bio}
                                     </p>
-
-                                    {/*<Button
+                                    <Button
                                         className={`w-full ${colors.btnBg} text-white`}
                                         onClick={() => window.location.href = `mailto:${mentor.email}`}
                                         >
@@ -116,7 +107,6 @@ export function MentorPage() {
                                         Contact Mentor
                                     </Button>
                                     
-                                    Would send a direct message to the mentor thorugh their email once they press to contact them*/}
                                 </Card>
                             );
                         })}
