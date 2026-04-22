@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "./pages/Navigation";
 import { HomePage } from "./pages/HomePage";
 import { MissionPage } from "./pages/MissionPage";
@@ -11,12 +11,24 @@ import { MentorPage } from "./pages/MentorPage";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { supabase } from './supabaseConnection';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+        const firstName = session.user.user_metadata?.first_name || "";
+        const lastName = session.user.user_metadata?.last_name || "";
+        setUserName(`${firstName} ${lastName}`.trim() || "User");
+      }
+    });
+  }, []);
 
   const handleLogin = (name) => {
     setIsLoggedIn(true);
@@ -25,7 +37,9 @@ export default function App() {
     toast.success(`Welcome back, ${name}!`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+
     setIsLoggedIn(false);
     setUserName("");
     setCurrentPage("home");
