@@ -391,7 +391,7 @@ describe("AdminDashboard", () => {
     ).not.toBeInTheDocument();
   });
 
-  test("adds a mentor when the form is completed", () => {
+  test("opens a no-code confirmation and adds a mentor when confirmed", () => {
     renderAdminDashboard();
 
     fireEvent.change(screen.getByLabelText(/^first name$/i), {
@@ -414,6 +414,13 @@ describe("AdminDashboard", () => {
     expect(addMentorButton).not.toBeDisabled();
 
     fireEvent.click(addMentorButton);
+
+    expect(
+      screen.getByRole("heading", { name: /add this mentor\?/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/confirmation code/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
 
     expect(screen.getByLabelText(/^first name$/i).value).toBe("");
     expect(screen.getByLabelText(/^last name$/i).value).toBe("");

@@ -44,7 +44,7 @@ type AdminDashboardProps = {
   mentors?: Mentor[];
 };
 
-type ConfirmationAction = "accept" | "reject" | "promote" | "delete";
+type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor";
 
 type ConfirmationState = {
   action: ConfirmationAction;
@@ -264,6 +264,11 @@ export function AdminDashboard({
       description: "This will remove this account:",
       codeLabel: "Confirmation code",
     },
+    addMentor: {
+      title: "Add this mentor?",
+      confirm: "Confirm",
+      description: "This will add this mentor record:",
+    },
   };
 
   const handleConfirmAction = () => {
@@ -322,6 +327,18 @@ export function AdminDashboard({
       bio: "",
       photoName: "",
     });
+  };
+
+  const handleOpenAddMentorConfirmation = () => {
+    if (!canAddMentor) {
+      return;
+    }
+
+    openConfirmationDialog(
+      "addMentor",
+      `${newMentor.firstName.trim()} ${newMentor.lastName.trim()}`,
+      handleAddMentor
+    );
   };
 
   const handleRemoveMentor = (mentorId: string) => {
@@ -1056,7 +1073,7 @@ export function AdminDashboard({
 
                 <button
                   type="button"
-                  onClick={handleAddMentor}
+                  onClick={handleOpenAddMentorConfirmation}
                   disabled={!canAddMentor}
                   className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
                 >
