@@ -3,15 +3,14 @@
 import { supabase } from './supabaseConnection';
 
 export const signInUser = async (email, password) => {
-
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-    })
+    });
 
-    if (signInError) {
-        return signInError;
-    } else {
-        return signInData;
+    if (error) {
+        throw error;
     }
+
+    return { data };
 };
