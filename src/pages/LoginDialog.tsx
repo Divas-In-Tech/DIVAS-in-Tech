@@ -4,8 +4,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Heart } from "lucide-react";
-
+import { Heart, Mail } from "lucide-react";
 import { registerUser } from "../registration"
 import { signInUser } from "../authentication"
 
@@ -20,12 +19,17 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
     firstName: "",
     lastName: "",
     email: "",
+    isUnder13: "",
+    parentEmail: "",
+    eventAttended: "",
     password: ""
   })
 
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [field]: e.target.value })
@@ -33,8 +37,6 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    console.log(form);
 
     const { firstName, lastName, email, password} = form;
 
@@ -46,8 +48,9 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
       setLoading(true);
 
       if (isSignUp) {
-        await registerUser(form.email, form.password, form.firstName, form.lastName);
-        onLogin(`${firstName} ${lastName}`);
+        await registerUser(form.email, form.password, form.firstName, form.lastName, form.eventAttended, form.isUnder13, form.parentEmail);
+        setUserEmail(form.email);
+        setIsSuccess(true);
 
       } else {
         const result = await signInUser(email, password);
@@ -63,6 +66,9 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
         firstName: "",
         lastName: "",
         email: "",
+        isUnder13: "",
+        parentEmail: "",
+        eventAttended: "",
         password: ""
       })
 
@@ -86,6 +92,30 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
 
+        {isSuccess ? (
+          <div className="flex flex-col items-center justify-center py-6 space-y-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+              <Mail className="w-8 h-8 text-green-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl">
+              Please check your email
+            </DialogTitle>
+            <DialogDescription className="text-center text-md pb-4">
+              We've sent an email to <span className="font-semibold text-black">{userEmail}</span>. 
+              Please verify to activate your account in order to log in.
+            </DialogDescription>
+            <Button className="w-full" 
+              onClick={() => {
+                setIsSuccess(false);
+                setIsSignUp(false);
+                setForm({ firstName: "", lastName: "", email: "", isUnder13: "", parentEmail: "", eventAttended: "", password: "" });
+              }} >
+              Return to Login
+            </Button>
+          </div>
+        ) : (
+
+        <>
         <DialogHeader>
 
           <div className="flex justify-center mb-4">
@@ -127,6 +157,41 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                   placeholder="Last Name"
                 />
               </div>
+
+              <div>
+                <Label htmlFor="eventAttended">Event Attended</Label>
+                <Input
+                  id="eventAttended"
+                  value={form.eventAttended}
+                  onChange={update("eventAttended")}
+                  placeholder="Event Attended"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox"
+                    id="under13"
+                    checked={form.isUnder13 === "true"}
+                    onChange={(e) => setForm({ ...form, isUnder13: e.target.checked ? "true" : "" })}
+                  />
+                  <Label htmlFor="under13">I am under 13 years old</Label>
+                </div>
+
+                {form.isUnder13 && (
+                  <div>
+                    <Label htmlFor="parentEmail">Parent Email</Label>
+                    <Input 
+                      id="parentEmail"
+                      type="email"
+                      value={form.parentEmail}
+                      onChange={update("parentEmail")}
+                      placeholder="Parent Email"
+                    />
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -144,6 +209,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
             <Label htmlFor="password">Password</Label>
               <Input 
                 id="password"
+                type="password"
                 value={form.password}
                 onChange={update("password")}
                 placeholder="Password"
@@ -172,6 +238,8 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
           </div>
 
         </form>
+        </>
+        )}
 
       </DialogContent>
     </Dialog>
