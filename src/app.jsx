@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "./pages/Navigation";
 import { HomePage } from "./pages/HomePage";
 import { MissionPage } from "./pages/MissionPage";
@@ -11,6 +11,7 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { supabase } from './supabaseConnection';
 
 export default function App() {
   const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
@@ -20,6 +21,17 @@ export default function App() {
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+        const firstName = session.user.user_metadata?.first_name || "";
+        const lastName = session.user.user_metadata?.last_name || "";
+        setUserName(`${firstName} ${lastName}`.trim() || "User");
+      }
+    });
+  }, []);
+
   const handleLogin = (name) => {
     setIsLoggedIn(true);
     setUserName(name);
@@ -27,7 +39,9 @@ export default function App() {
     toast.success(`Welcome back, ${name}!`);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+
     setIsLoggedIn(false);
     setIsAdmin(defaultIsAdmin);
     setUserName("");
