@@ -1,18 +1,19 @@
 import { Button } from "../components/ui/button";
 import { LogOut, LogIn, Flower } from "lucide-react";
 
-type Page = "home" | "mission" | "board" | "volunteer" | "partners" | "calendar" | "chat";
+type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact" | "admin";
 
 interface NavigationProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   onLoginClick: () => void;
   onLogout: () => void;
   userName: string;
 }
 
-export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, onLogout, userName }: NavigationProps) {
+export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLoginClick, onLogout, userName }: NavigationProps) {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,22 +48,17 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Board
               </button>
+        {/*Mentor Page down below V */}
+            {isLoggedIn &&(
             <button
-              onClick={() => onNavigate('volunteer')}
+              onClick={() => onNavigate('mentors')}
               className={`transition-colors ${
-                currentPage === 'volunteer' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+                currentPage === 'mentors' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
               }`}
             >
-              Volunteer
+              Mentors
             </button>
-            {/*<button
-              onClick={() => onNavigate('contact')}
-              className={`transition-colors ${
-                currentPage === 'contact' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
-              }`}
-            >
-              Contact 
-            </button>*/}
+            )}
             <button
               onClick={() => onNavigate('partners')}
               className={`transition-colors ${
@@ -72,6 +68,14 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
               Partners
             </button>
             <button
+              onClick={() => onNavigate('contact')}
+              className={`transition-colors ${
+                currentPage === 'contact' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            > 
+            Contact 
+            </button>
+            <button
               onClick={() => onNavigate('calendar')}
               className={`transition-colors ${
                 currentPage === 'calendar' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
@@ -79,16 +83,17 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
-            {isLoggedIn && (
+            {isAdmin ? (
               <button
-                onClick={() => onNavigate('chat')}
-                className={`transition-colors ${
-                  currentPage === 'chat' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
-                }`}
-              >
-                Community Chat
-              </button>
-            )}
+              onClick={() => onNavigate('admin')}
+              className={`transition-colors ${
+                currentPage === 'admin' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Admin Dashboard
+            </button>
+            )
+            : null}
           </div>
 
           <div className="flex items-center gap-3">

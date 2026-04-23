@@ -5,17 +5,19 @@ import { MissionPage } from "./pages/MissionPage";
 import { BoardPage } from "./pages/BoardPage";
 import { PartnersPage } from "./pages/PartnersPage";
 import { CalendarPage } from "./pages/CalendarPage";
-import { ChatPage } from "./pages/ChatPage";
-{/*import { ContactPage } from "./pages/ContactPage";*/}
+import { ContactPage } from "./pages/ContactPage";
 import { MentorPage } from "./pages/MentorPage";
+import { AdminDashboard } from "./pages/AdminDashboard";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { supabase } from './supabaseConnection';
 
 export default function App() {
+  const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
   const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(defaultIsAdmin); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
 
@@ -41,17 +43,18 @@ export default function App() {
     await supabase.auth.signOut();
 
     setIsLoggedIn(false);
+    setIsAdmin(defaultIsAdmin);
     setUserName("");
     setCurrentPage("home");
     toast.success("Successfully logged out");
   };
 
   const handleNavigate = (page) => {
-    if (page === "chat" && !isLoggedIn) {
-      toast.error("Please login to access the community chat");
-      setShowLogin(true);
+    if (page === "admin" && !isAdmin) {
+      toast.error("Admin access is required to view the dashboard");
       return;
     }
+
     setCurrentPage(page);
   };
 
@@ -61,6 +64,7 @@ export default function App() {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         isLoggedIn={isLoggedIn}
+        isAdmin={isAdmin}
         onLoginClick={() => setShowLogin(true)}
         onLogout={handleLogout}
         userName={userName}
@@ -68,8 +72,8 @@ export default function App() {
 
       {currentPage === "home" && <HomePage />}
       {currentPage === "mission" && <MissionPage />}
-      {/*currentPage === "contact" && <ContactPage />*/}
-      {currentPage === "mentor" && <MentorPage />}
+      {currentPage === "contact" && <ContactPage />}
+      {currentPage === "mentors" && <MentorPage />}
       {currentPage === "board" && <BoardPage />}
       {currentPage === "partners" && <PartnersPage />}
       {currentPage === "calendar" && (
@@ -78,9 +82,7 @@ export default function App() {
           onLoginPrompt={() => setShowLogin(true)}
         />
       )}
-      {currentPage === "chat" && isLoggedIn && (
-        <ChatPage userName={userName} />
-      )}
+      {currentPage === "admin" && isAdmin && <AdminDashboard />}
 
       <LoginDialog
         open={showLogin}
