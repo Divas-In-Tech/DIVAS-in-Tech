@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { AdminDashboard } from "../pages/AdminDashboard";
 
@@ -7,6 +7,86 @@ describe("AdminDashboard", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
+
+  const defaultPendingUsers = [
+    {
+      firstName: "Jane",
+      lastName: "Doe",
+      accountType: "Student",
+      eventAttended: "Workshop 1",
+      createdAt: "01/06/2024",
+    },
+    {
+      firstName: "John",
+      lastName: "Smith",
+      accountType: "Student",
+      eventAttended: "Workshop 2",
+      createdAt: "04/16/2026",
+    },
+  ];
+
+  const defaultSearchableUsers = [
+    {
+      firstName: "Janie",
+      lastName: "Doe",
+      email: "janie.doe@divasintech.org",
+      accountType: "Student",
+      status: "Active",
+      joinedAt: "01/06/2024",
+    },
+    {
+      firstName: "John",
+      lastName: "Smith",
+      email: "john.smith@divasintech.org",
+      accountType: "Student",
+      status: "Pending",
+      joinedAt: "04/16/2026",
+    },
+    {
+      firstName: "John",
+      lastName: "Smith",
+      email: "john.smith2@divasintech.org",
+      accountType: "Student",
+      status: "Pending",
+      joinedAt: "04/01/2026",
+    },
+  ];
+
+  const defaultMentors = [
+    {
+      id: "mentor-1",
+      firstName: "Alicia",
+      lastName: "Nguyen",
+      email: "alicia.nguyen@divasintech.org",
+      bio: "Frontend engineer passionate about helping early-career developers build confidence, portfolios, and sustainable coding habits.",
+      photoName: "alicia-nguyen-headshot.jpg",
+    },
+    {
+      id: "mentor-2",
+      firstName: "Monica",
+      lastName: "Patel",
+      email: "monica.patel@divasintech.org",
+      bio: "Product leader focused on mentorship around internships, technical interviewing, and turning ideas into well-scoped projects.",
+    },
+  ];
+
+  const renderAdminDashboard = (props = {}) =>
+    render(
+      React.createElement(AdminDashboard, {
+        pendingUsers: defaultPendingUsers,
+        searchableUsers: defaultSearchableUsers,
+        mentors: defaultMentors,
+        ...props,
+      })
+    );
+
+  const getAccountSearchControls = () => {
+    const accountSearchSection = screen
+      .getByRole("heading", { name: /account search/i })
+      .closest("section");
+
+    return within(accountSearchSection);
+  };
 
   test("renders pending user data passed into the table", () => {
     const mockPendingUsers = [
@@ -26,9 +106,7 @@ describe("AdminDashboard", () => {
       },
     ];
 
-    render(
-      React.createElement(AdminDashboard, { pendingUsers: mockPendingUsers })
-    );
+    renderAdminDashboard({ pendingUsers: mockPendingUsers });
 
     expect(
       screen.getByRole("columnheader", { name: /first name/i })
@@ -64,19 +142,17 @@ describe("AdminDashboard", () => {
       new Date("04/16/2026").getTime()
     );
 
-    render(
-      React.createElement(AdminDashboard, {
-        pendingUsers: [
-          {
-            firstName: "Jordan",
-            lastName: "Lee",
-            accountType: "Volunteer",
-            eventAttended: "Hack Night",
-            createdAt: "04/02/2026",
-          },
-        ],
-      })
-    );
+    renderAdminDashboard({
+      pendingUsers: [
+        {
+          firstName: "Jordan",
+          lastName: "Lee",
+          accountType: "Volunteer",
+          eventAttended: "Hack Night",
+          createdAt: "04/02/2026",
+        },
+      ],
+    });
 
     expect(
       screen.getByLabelText(/account pending for more than 14 days/i)
@@ -98,16 +174,14 @@ describe("AdminDashboard", () => {
       },
     ];
 
-    render(
-      React.createElement(AdminDashboard, {
-        searchableUsers: mockSearchableUsers,
-      })
-    );
+    renderAdminDashboard({ searchableUsers: mockSearchableUsers });
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+    const accountSearchControls = getAccountSearchControls();
+
+    fireEvent.change(accountSearchControls.getByLabelText(/search for a user by name/i), {
       target: { value: "taylor brooks" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(accountSearchControls.getByRole("button", { name: /search/i }));
 
     expect(screen.getByText("taylor.brooks@divasintech.org")).toBeInTheDocument();
     expect(screen.getByText(/account type: mentor/i)).toBeInTheDocument();
@@ -133,16 +207,14 @@ describe("AdminDashboard", () => {
       }
     ];
 
-    render(
-      React.createElement(AdminDashboard, {
-        searchableUsers: mockSearchableUsers,
-      })
-    );
+    renderAdminDashboard({ searchableUsers: mockSearchableUsers });
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+    const accountSearchControls = getAccountSearchControls();
+
+    fireEvent.change(accountSearchControls.getByLabelText(/search for a user by name/i), {
       target: { value: "alex smith" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(accountSearchControls.getByRole("button", { name: /search/i }));
 
     expect(screen.getByText("a.smith@email.com")).toBeInTheDocument();
     expect(screen.getByText(/account type: volunteer/i)).toBeInTheDocument();
@@ -163,16 +235,14 @@ describe("AdminDashboard", () => {
       },
     ];
 
-    render(
-      React.createElement(AdminDashboard, {
-        searchableUsers: mockSearchableUsers,
-      })
-    );
+    renderAdminDashboard({ searchableUsers: mockSearchableUsers });
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+    const accountSearchControls = getAccountSearchControls();
+
+    fireEvent.change(accountSearchControls.getByLabelText(/search for a user by name/i), {
       target: { value: "a user who does not exist" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(accountSearchControls.getByRole("button", { name: /search/i }));
 
     expect(
       screen.getByText(/no account matched that name\./i)
@@ -181,7 +251,7 @@ describe("AdminDashboard", () => {
   });
 
   test("opens an accept confirmation dialog and closes it with cancel", () => {
-    render(React.createElement(AdminDashboard));
+    renderAdminDashboard();
 
     fireEvent.click(screen.getByRole("button", { name: /activate jane doe/i }));
 
@@ -200,7 +270,7 @@ describe("AdminDashboard", () => {
   });
 
   test("opens a reject confirmation dialog and closes it with the top corner x", () => {
-    render(React.createElement(AdminDashboard));
+    renderAdminDashboard();
 
     fireEvent.click(screen.getByRole("button", { name: /reject jane doe/i }));
 
@@ -216,12 +286,14 @@ describe("AdminDashboard", () => {
   });
 
   test("requires a confirmation code for promote actions", () => {
-    render(React.createElement(AdminDashboard));
+    renderAdminDashboard();
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+    const accountSearchControls = getAccountSearchControls();
+
+    fireEvent.change(accountSearchControls.getByLabelText(/search for a user by name/i), {
       target: { value: "janie doe" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(accountSearchControls.getByRole("button", { name: /search/i }));
     fireEvent.click(
       screen.getByRole("button", { name: /promote janie doe to admin/i })
     );
@@ -242,12 +314,14 @@ describe("AdminDashboard", () => {
   });
 
   test("requires a confirmation code for delete actions", () => {
-    render(React.createElement(AdminDashboard));
+    renderAdminDashboard();
 
-    fireEvent.change(screen.getByLabelText(/search for a user by name/i), {
+    const accountSearchControls = getAccountSearchControls();
+
+    fireEvent.change(accountSearchControls.getByLabelText(/search for a user by name/i), {
       target: { value: "janie doe" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /search/i }));
+    fireEvent.click(accountSearchControls.getByRole("button", { name: /search/i }));
     fireEvent.click(
       screen.getByRole("button", { name: /deactivate janie doe account/i })
     );
@@ -256,5 +330,139 @@ describe("AdminDashboard", () => {
       screen.getByRole("heading", { name: /delete this account\?/i })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/confirmation code/i)).toBeInTheDocument();
+  });
+
+  test("searches for a mentor and displays matching mentor details", () => {
+    renderAdminDashboard();
+
+    const mentorshipSection = screen
+      .getByRole("heading", { name: /mentorship management/i })
+      .closest("section");
+    const mentorSearchControls = within(mentorshipSection);
+
+    fireEvent.change(
+      mentorSearchControls.getByLabelText(/search for a mentor by name/i),
+      {
+        target: { value: "alicia nguyen" },
+      }
+    );
+    fireEvent.click(mentorSearchControls.getByRole("button", { name: /search/i }));
+
+    expect(
+      mentorSearchControls.getByText("alicia.nguyen@divasintech.org")
+    ).toBeInTheDocument();
+    expect(
+      mentorSearchControls.getByRole("button", {
+        name: /remove mentor alicia nguyen/i,
+      })
+    ).toBeInTheDocument();
+  });
+
+  test("removes a mentor after confirmation", () => {
+    renderAdminDashboard();
+
+    const mentorshipSection = screen
+      .getByRole("heading", { name: /mentorship management/i })
+      .closest("section");
+    const mentorControls = within(mentorshipSection);
+
+    fireEvent.change(mentorControls.getByLabelText(/search for a mentor by name/i), {
+      target: { value: "alicia nguyen" },
+    });
+    fireEvent.click(mentorControls.getByRole("button", { name: /search/i }));
+    fireEvent.click(
+      mentorControls.getByRole("button", { name: /remove mentor alicia nguyen/i })
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /delete this account\?/i })
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/confirmation code/i), {
+      target: { value: "DELETE-123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    expect(
+      screen.queryByText("alicia.nguyen@divasintech.org")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /delete this account\?/i })
+    ).not.toBeInTheDocument();
+  });
+
+  test("opens a no-code confirmation and adds a mentor when confirmed", () => {
+    renderAdminDashboard();
+
+    fireEvent.change(screen.getByLabelText(/^first name$/i), {
+      target: { value: "Priya" },
+    });
+    fireEvent.change(screen.getByLabelText(/^last name$/i), {
+      target: { value: "Shah" },
+    });
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "priya.shah@divasintech.org" },
+    });
+    fireEvent.change(screen.getByLabelText(/^bio$/i), {
+      target: {
+        value:
+          "Engineering manager who mentors students on resume reviews, confidence building, and career growth.",
+      },
+    });
+
+    const addMentorButton = screen.getByRole("button", { name: /add mentor/i });
+    expect(addMentorButton).not.toBeDisabled();
+
+    fireEvent.click(addMentorButton);
+
+    expect(
+      screen.getByRole("heading", { name: /add this mentor\?/i })
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/confirmation code/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    expect(screen.getByLabelText(/^first name$/i).value).toBe("");
+    expect(screen.getByLabelText(/^last name$/i).value).toBe("");
+    expect(screen.getByLabelText(/^email$/i).value).toBe("");
+    expect(screen.getByLabelText(/^bio$/i).value).toBe("");
+
+    const mentorshipSection = screen
+      .getByRole("heading", { name: /mentorship management/i })
+      .closest("section");
+    const mentorControls = within(mentorshipSection);
+
+    fireEvent.change(mentorControls.getByLabelText(/search for a mentor by name/i), {
+      target: { value: "priya shah" },
+    });
+    fireEvent.click(mentorControls.getByRole("button", { name: /search/i }));
+
+    expect(
+      mentorControls.getByText("priya.shah@divasintech.org")
+    ).toBeInTheDocument();
+  });
+
+  test("disables adding a mentor when the bio exceeds 200 words", () => {
+    render(React.createElement(AdminDashboard));
+
+    const overLimitBio = Array.from({ length: 201 }, (_, index) => `word${index + 1}`).join(" ");
+
+    fireEvent.change(screen.getByLabelText(/^first name$/i), {
+      target: { value: "Jamie" },
+    });
+    fireEvent.change(screen.getByLabelText(/^last name$/i), {
+      target: { value: "Lopez" },
+    });
+    fireEvent.change(screen.getByLabelText(/^email$/i), {
+      target: { value: "jamie.lopez@divasintech.org" },
+    });
+    fireEvent.change(screen.getByLabelText(/^bio$/i), {
+      target: { value: overLimitBio },
+    });
+
+    expect(screen.getByText("201/200 words")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /add mentor/i })
+    ).toBeDisabled();
   });
 });
