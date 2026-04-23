@@ -29,16 +29,27 @@ export type SearchableUser = {
   joinedAt: string;
 };
 
+export type Mentor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  bio: string;
+  photoName?: string;
+};
+
 type AdminDashboardProps = {
   pendingUsers?: PendingUser[];
   searchableUsers?: SearchableUser[];
+  mentors?: Mentor[];
 };
 
-type ConfirmationAction = "accept" | "reject" | "promote" | "delete";
+type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor";
 
 type ConfirmationState = {
   action: ConfirmationAction;
   targetLabel: string;
+  onConfirm?: () => void;
 } | null;
 
 type AdminEvent = {
@@ -52,6 +63,24 @@ type AdminEvent = {
   capacity: string;
   unlimited: boolean;
 };
+
+const sampleMentors: Mentor[] = [
+  {
+    id: "mentor-1",
+    firstName: "Alicia",
+    lastName: "Nguyen",
+    email: "alicia.nguyen@divasintech.org",
+    bio: "Frontend engineer passionate about helping early-career developers build confidence, portfolios, and sustainable coding habits.",
+    photoName: "alicia-nguyen-headshot.jpg",
+  },
+  {
+    id: "mentor-2",
+    firstName: "Monica",
+    lastName: "Patel",
+    email: "monica.patel@divasintech.org",
+    bio: "Product leader focused on mentorship around internships, technical interviewing, and turning ideas into well-scoped projects.",
+  },
+];
 
 export function AdminDashboard({
   pendingUsers = [{
@@ -94,6 +123,7 @@ export function AdminDashboard({
       joinedAt: "04/01/2026",
     },
   ],
+  mentors: initialMentors = sampleMentors,
 }: AdminDashboardProps) {
   const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,6 +135,17 @@ export function AdminDashboard({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<typeof searchableUsers>([]);
   const [searchAttempted, setSearchAttempted] = useState(false);
+  const [mentors, setMentors] = useState<Mentor[]>(initialMentors);
+  const [mentorSearchQuery, setMentorSearchQuery] = useState("");
+  const [selectedMentors, setSelectedMentors] = useState<Mentor[]>([]);
+  const [mentorSearchAttempted, setMentorSearchAttempted] = useState(false);
+  const [newMentor, setNewMentor] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    bio: "",
+    photoName: "",
+  });
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
   const [confirmationCode, setConfirmationCode] = useState("");
@@ -146,6 +187,27 @@ export function AdminDashboard({
     setSelectedUsers(matchedUsers);
   };
 
+  const handleMentorSearch = () => {
+    const normalizedQuery = mentorSearchQuery.trim().toLowerCase();
+
+    setMentorSearchAttempted(true);
+
+    if (!normalizedQuery) {
+      setSelectedMentors([]);
+      return;
+    }
+
+    const matchedMentors = mentors.filter((mentor) => {
+      const fullName = `${mentor.firstName} ${mentor.lastName}`.toLowerCase();
+      return (
+        fullName.includes(normalizedQuery) ||
+        mentor.email.toLowerCase().includes(normalizedQuery)
+      );
+    });
+
+    setSelectedMentors(matchedMentors);
+  };
+
   const getEventsForDate = (date: Date | undefined) => {
     if (!date) return [];
 
@@ -169,9 +231,10 @@ export function AdminDashboard({
 
   const openConfirmationDialog = (
     action: ConfirmationAction,
-    targetLabel: string
+    targetLabel: string,
+    onConfirm?: () => void
   ) => {
-    setConfirmationState({ action, targetLabel });
+    setConfirmationState({ action, targetLabel, onConfirm });
     setConfirmationCode("");
   };
 
@@ -201,6 +264,11 @@ export function AdminDashboard({
       description: "This will remove this account:",
       codeLabel: "Confirmation code",
     },
+    addMentor: {
+      title: "Add this mentor?",
+      confirm: "Confirm",
+      description: "This will add this mentor record:",
+    },
   };
 
   const handleConfirmAction = () => {
@@ -208,7 +276,78 @@ export function AdminDashboard({
       return;
     }
 
+    confirmationState?.onConfirm?.();
     closeConfirmationDialog();
+  };
+
+  const mentorBioWordCount = newMentor.bio
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  const mentorBioTooLong = mentorBioWordCount > 200;
+  const canAddMentor =
+    newMentor.firstName.trim() &&
+    newMentor.lastName.trim() &&
+    newMentor.email.trim() &&
+    newMentor.bio.trim() &&
+    !mentorBioTooLong;
+
+  const handleAddMentor = () => {
+    if (!canAddMentor) {
+      return;
+    }
+    {/*The ID is just a temporary placeholder. Not sure how the photo thing works.*/}
+    const mentorToAdd: Mentor = {
+      id: `mentor-${Date.now()}`, 
+      firstName: newMentor.firstName.trim(),
+      lastName: newMentor.lastName.trim(),
+      email: newMentor.email.trim(),
+      bio: newMentor.bio.trim(),
+      photoName: newMentor.photoName.trim() || undefined,
+    };
+
+    setMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
+
+    const normalizedQuery = mentorSearchQuery.trim().toLowerCase();
+    if (normalizedQuery) {
+      const fullName = `${mentorToAdd.firstName} ${mentorToAdd.lastName}`.toLowerCase();
+      const matchesSearch =
+        fullName.includes(normalizedQuery) ||
+        mentorToAdd.email.toLowerCase().includes(normalizedQuery);
+
+      if (matchesSearch) {
+        setSelectedMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
+      }
+    }
+
+    setNewMentor({
+      firstName: "",
+      lastName: "",
+      email: "",
+      bio: "",
+      photoName: "",
+    });
+  };
+
+  const handleOpenAddMentorConfirmation = () => {
+    if (!canAddMentor) {
+      return;
+    }
+
+    openConfirmationDialog(
+      "addMentor",
+      `${newMentor.firstName.trim()} ${newMentor.lastName.trim()}`,
+      handleAddMentor
+    );
+  };
+
+  const handleRemoveMentor = (mentorId: string) => {
+    setMentors((currentMentors) =>
+      currentMentors.filter((mentor) => mentor.id !== mentorId)
+    );
+    setSelectedMentors((currentMentors) =>
+      currentMentors.filter((mentor) => mentor.id !== mentorId)
+    );
   };
 
   const handleCreateEvent = () => {
@@ -578,7 +717,7 @@ export function AdminDashboard({
 
                 {selectedDate ? (
                   <div className="space-y-4">
-                    <div>
+                    <div className = "space-y-2">
                       <Label htmlFor="admin-event-name">Event name</Label>
                       <Input
                         id="admin-event-name"
@@ -590,7 +729,7 @@ export function AdminDashboard({
                       />
                     </div>
 
-                    <div>
+                    <div className = "space-y-2">
                       <Label htmlFor="admin-event-description">Description</Label>
                       <Textarea
                         id="admin-event-description"
@@ -607,7 +746,7 @@ export function AdminDashboard({
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div>
+                      <div className = "space-y-2">
                         <Label htmlFor="admin-event-time">Time</Label>
                         <Input
                           id="admin-event-time"
@@ -619,7 +758,7 @@ export function AdminDashboard({
                         />
                       </div>
 
-                      <div>
+                      <div className = "space-y-2">
                         <Label htmlFor="admin-event-capacity">Capacity</Label>
                         <Input
                           id="admin-event-capacity"
@@ -655,7 +794,7 @@ export function AdminDashboard({
                     </label>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div>
+                      <div className = "space-y-2">
                         <Label htmlFor="admin-event-location">Location</Label>
                         <Input
                           id="admin-event-location"
@@ -670,7 +809,7 @@ export function AdminDashboard({
                         />
                       </div>
 
-                      <div>
+                      <div className = "space-y-2">
                         <Label htmlFor="admin-event-link">Link</Label>
                         <Input
                           id="admin-event-link"
@@ -763,6 +902,185 @@ export function AdminDashboard({
                 )}
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mentorship Management Section */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl text-gray-900 mb-6">Mentorship Management</h2>
+          <p className="mb-8 text-gray-600">
+            Manage mentor records here.
+          </p>
+
+          <div className="grid gap-8 lg:grid-cols-2">
+            <Card className="p-6">
+              <h3 className="text-2xl text-gray-900 mb-4">Find and Remove Mentors</h3>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                <label className="sr-only" htmlFor="mentor-search">
+                  Search for a mentor by name
+                </label>
+                <input
+                  id="mentor-search"
+                  type="text"
+                  value={mentorSearchQuery}
+                  onChange={(event) => setMentorSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleMentorSearch();
+                    }
+                  }}
+                  placeholder="Search by mentor name"
+                  className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-200"
+                />
+                <button
+                  type="button"
+                  onClick={handleMentorSearch}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800"
+                >
+                  <Search className="h-4 w-4" />
+                  Search
+                </button>
+              </div>
+
+              {selectedMentors.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {selectedMentors.map((mentor) => (
+                    <div
+                      key={mentor.id}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-5"
+                    >
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p className="text-lg font-semibold text-gray-900">
+                            {mentor.firstName} {mentor.lastName}
+                          </p>
+                          <p>{mentor.email}</p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`Remove mentor ${mentor.firstName} ${mentor.lastName}`}
+                          onClick={() =>
+                            openConfirmationDialog(
+                              "delete",
+                              `${mentor.firstName} ${mentor.lastName}`,
+                              () => handleRemoveMentor(mentor.id)
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                          <UserX className="h-4 w-4" />
+                          Remove Mentor
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : mentorSearchAttempted ? (
+                <p className="mt-4 text-sm text-gray-500">
+                  No mentor matched that search.
+                </p>
+              ) : (
+                <p className="mt-4 text-sm text-gray-500">
+                  Search by mentor name to review or remove an existing mentor.
+                </p>
+              )}
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-2xl text-gray-900 mb-4">Add a Mentor</h3>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className = "space-y-2">
+                    <Label htmlFor="mentor-first-name">First Name</Label>
+                    <Input
+                      id="mentor-first-name"
+                      value={newMentor.firstName}
+                      onChange={(event) =>
+                        setNewMentor({ ...newMentor, firstName: event.target.value })
+                      }
+                      placeholder="Enter first name"
+                    />
+                  </div>
+
+                  <div className = "space-y-2">
+                    <Label htmlFor="mentor-last-name">Last Name</Label>
+                    <Input
+                      id="mentor-last-name"
+                      value={newMentor.lastName}
+                      onChange={(event) =>
+                        setNewMentor({ ...newMentor, lastName: event.target.value })
+                      }
+                      placeholder="Enter last name"
+                    />
+                  </div>
+                </div>
+
+                <div className = "space-y-2">
+                  <Label htmlFor="mentor-email">Email</Label>
+                  <Input
+                    id="mentor-email"
+                    type="email"
+                    value={newMentor.email}
+                    onChange={(event) =>
+                      setNewMentor({ ...newMentor, email: event.target.value })
+                    }
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div className = "space-y-2">
+                  <Label htmlFor="mentor-bio">Bio</Label>
+                  <Textarea
+                    id="mentor-bio"
+                    value={newMentor.bio}
+                    onChange={(event) =>
+                      setNewMentor({ ...newMentor, bio: event.target.value })
+                    }
+                    placeholder="Write a short mentor bio"
+                    rows={6}
+                  />
+                  <p
+                    className={`mt-2 text-sm ${
+                      mentorBioTooLong ? "text-red-600" : "text-gray-500"
+                    }`}
+                  >
+                    {mentorBioWordCount}/200 words
+                  </p>
+                </div>
+
+                <div className = "space-y-2">
+                  <Label htmlFor="mentor-photo">Upload Photo (Optional)</Label>
+                  <Input
+                    id="mentor-photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      setNewMentor({
+                        ...newMentor,
+                        photoName: event.target.files?.[0]?.name ?? "",
+                      })
+                    }
+                    className="cursor-pointer"
+                  />
+                  <p className="mt-2 text-sm text-gray-500">
+                    {newMentor.photoName
+                      ? `Selected file: ${newMentor.photoName}`
+                      : "No photo selected."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddMentorConfirmation}
+                  disabled={!canAddMentor}
+                  className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
+                >
+                  Add Mentor
+                </button>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
