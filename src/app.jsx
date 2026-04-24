@@ -11,15 +11,24 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { LoginDialog } from "./pages/LoginDialog";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+
 import { supabase } from './supabaseConnection';
+import ResetPassword from "./pages/ResetPassword";
 
 export default function App() {
   const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
-  const [currentPage, setCurrentPage] = useState("home");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(defaultIsAdmin); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+
+  // without this, the reset email can't redirect to the reset page
+  const [currentPage, setCurrentPage] = useState(() => {
+    if (window.location.pathname === '/reset-password') {
+      return "reset-password";
+    }
+    return "home";
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -83,6 +92,7 @@ export default function App() {
         />
       )}
       {currentPage === "admin" && isAdmin && <AdminDashboard />}
+      {currentPage === "reset-password" && <ResetPassword />}
 
       <LoginDialog
         open={showLogin}
