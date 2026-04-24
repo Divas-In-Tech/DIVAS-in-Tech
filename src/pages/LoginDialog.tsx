@@ -5,8 +5,10 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Heart, Mail } from "lucide-react";
+
 import { registerUser } from "../registration"
 import { signInUser } from "../authentication"
+import { sendResetPasswordEmail } from "../forgotPassword";
 
 interface LoginDialogProps {
   open: boolean;
@@ -30,6 +32,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [isPasswordReset, setPasswordReset] = useState(false)
 
   const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [field]: e.target.value })
@@ -37,6 +40,24 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (isPasswordReset) {
+      if (!form.email) {
+        return setError("Please enter your email");
+      }
+
+      try {
+        setLoading(true);
+        await sendResetPasswordEmail(form.email);
+        setUserEmail(form.email);
+        setIsSuccess(true);
+      } catch (error: any) {
+        setError(error.message || "Failed to send reset email");
+      } finally {
+        setLoading(false)
+      }
+      return;
+    }
 
     const { firstName, lastName, email, password} = form;
 
@@ -84,8 +105,14 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
   };
 
   const toggleMode = () => {
-    setIsSignUp(!isSignUp)
-    setError("")
+    setIsSignUp(!isSignUp);
+    setPasswordReset(false);
+    setError("");
+  }
+
+  const togglePasswordReset = () => {
+    setPasswordReset(!isPasswordReset);
+    setError("");
   }
 
   return (
@@ -102,12 +129,15 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
             </DialogTitle>
             <DialogDescription className="text-center text-md pb-4">
               We've sent an email to <span className="font-semibold text-black">{userEmail}</span>. 
-              Please verify to activate your account in order to log in.
+              {isPasswordReset 
+                ? " Please use the link to reset your password." 
+                : " Please verify to activate your account in order to log in."}
             </DialogDescription>
             <Button className="w-full" 
               onClick={() => {
                 setIsSuccess(false);
                 setIsSignUp(false);
+                setPasswordReset(false);
                 setForm({ firstName: "", lastName: "", email: "", isUnder13: "", parentEmail: "", eventAttended: "", password: "" });
               }} >
               Return to Login
@@ -124,19 +154,21 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
             </div>
           </div>
         
-          <DialogTitle className="text-center text-2x1">
-            {isSignUp ? "Join Divas in Tech" : "Welcome Back"}
+          <DialogTitle className="text-center text-2xl">
+            {isPasswordReset ? "Reset Password" : isSignUp ? "Join Divas in Tech" : "Welcome Back"}
           </DialogTitle>
 
           <DialogDescription className="text-center">
-            {isSignUp ? "Create an accoutn to access community features" : "Login to access the calendar and mentor chat"}
+            {isPasswordReset 
+              ? "Enter your email address and we'll send you a link to reset your password."
+              : isSignUp ? "Create an account to access community features" : "Login to access the calendar and mentor chat"}
           </DialogDescription>
 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
 
-          {isSignUp && (
+          {isSignUp && !isPasswordReset && (
             <>
               <div>
                 <Label htmlFor="firstName">First Name</Label>
@@ -205,8 +237,20 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
               />
           </div>
 
-          <div>
-            <Label htmlFor="password">Password</Label>
+          {!isPasswordReset && (
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="password">Password</Label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={togglePasswordReset}
+                    className="text-xs text-violet-700 hover:text-purple-800 hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
               <Input 
                 id="password"
                 type="password"
@@ -214,7 +258,8 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                 onChange={update("password")}
                 placeholder="Password"
               />
-          </div>
+            </div>
+          )}
 
           {error && (
             <Alert variant="destructive">
@@ -223,18 +268,30 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Login"}
+            {loading ? "Loading..." : isPasswordReset ? "Send Reset Link" : isSignUp ? "Sign Up" : "Login"}
           </Button>
 
-          <div>
-            {isSignUp ? "Already have an account?" : "Don't have and account?"}{" "}
-            <button
-              type="button"
-              onClick={toggleMode}
-              className="text-violet-700 hover:text-purple-800 hover:underline"
-            >
-              {isSignUp ? "Login" : "Sign Up"}
-            </button>
+          <div className="text-center text-sm pt-2">
+            {isPasswordReset ? (
+              <button
+                type="button"
+                onClick={togglePasswordReset}
+                className="text-violet-700 hover:text-purple-800 hover:underline"
+              >
+                Back to Login
+              </button>
+            ) : (
+              <div>
+                {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-violet-700 hover:text-purple-800 hover:underline"
+                >
+                  {isSignUp ? "Login" : "Sign Up"}
+                </button>
+              </div>
+            )}
           </div>
 
         </form>
