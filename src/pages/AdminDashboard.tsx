@@ -57,11 +57,78 @@ type AdminEvent = {
   name: string;
   description: string;
   date: Date;
+  startTime: string;
+  endTime: string;
   time: string;
   location: string;
   link: string;
   capacity: string;
   unlimited: boolean;
+};
+
+const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+  const totalMinutes = index * 15;
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const meridiem = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+
+  return {
+    value: `${hours24.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`,
+    label: `${hours12}:${minutes.toString().padStart(2, "0")} ${meridiem}`,
+    minutes: totalMinutes,
+  };
+});
+
+const parseTimeInput = (value: string) => {
+  const normalizedValue = value.trim().toUpperCase().replace(/\s+/g, "");
+  const match = normalizedValue.match(/^(\d{1,2})(?::(\d{1,2}))?(AM|PM)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = match[2] ? Number(match[2]) : 0;
+  const period = match[3];
+
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  return {
+    hours,
+    minutes,
+    period,
+  };
+};
+
+const formatTimeLabel = (value: string) => {
+  const parsedTime = parseTimeInput(value);
+
+  if (!parsedTime) {
+    return value.trim();
+  }
+
+  return `${parsedTime.hours}:${parsedTime.minutes
+    .toString()
+    .padStart(2, "0")} ${parsedTime.period}`;
+};
+
+const getTimeInMinutes = (value: string) => {
+  const parsedTime = parseTimeInput(value);
+
+  if (!parsedTime) {
+    return -1;
+  }
+
+  const normalizedHour = parsedTime.hours % 12;
+  const hours24 =
+    parsedTime.period === "PM" ? normalizedHour + 12 : normalizedHour;
+
+  return hours24 * 60 + parsedTime.minutes;
 };
 
 const sampleMentors: Mentor[] = [
@@ -155,7 +222,8 @@ export function AdminDashboard({
   const [newEvent, setNewEvent] = useState({
     name: "",
     description: "",
-    time: "",
+    startTime: "",
+    endTime: "",
     location: "",
     link: "",
     capacity: "",
@@ -292,6 +360,40 @@ export function AdminDashboard({
     newMentor.bio.trim() &&
     !mentorBioTooLong;
 
+  const eventHasRequiredFields =
+    Boolean(selectedDate) &&
+    Boolean(newEvent.name.trim()) &&
+    Boolean(newEvent.description.trim()) &&
+    getTimeInMinutes(newEvent.startTime) >= 0 &&
+    getTimeInMinutes(newEvent.endTime) >= 0 &&
+    Boolean(newEvent.location.trim() || newEvent.link.trim()) &&
+    Boolean(newEvent.unlimited || newEvent.capacity.trim());
+
+  const eventTimesAreInOrder =
+    !newEvent.startTime ||
+    !newEvent.endTime ||
+    getTimeInMinutes(newEvent.endTime) >= getTimeInMinutes(newEvent.startTime);
+
+  const canCreateEvent = eventHasRequiredFields && eventTimesAreInOrder;
+
+  const handleStartTimeChange = (value: string) => {
+    setNewEvent((currentEvent) => {
+      const nextStartTime = value;
+      const nextStartTimeMinutes = getTimeInMinutes(nextStartTime);
+      const currentEndTimeMinutes = getTimeInMinutes(currentEvent.endTime);
+      const shouldResetEndTime =
+        nextStartTimeMinutes >= 0 &&
+        currentEndTimeMinutes >= 0 &&
+        currentEndTimeMinutes < nextStartTimeMinutes;
+
+      return {
+        ...currentEvent,
+        startTime: nextStartTime,
+        endTime: shouldResetEndTime ? "" : currentEvent.endTime,
+      };
+    });
+  };
+
   const handleAddMentor = () => {
     if (!canAddMentor) {
       return;
@@ -351,16 +453,12 @@ export function AdminDashboard({
   };
 
   const handleCreateEvent = () => {
-    if (
-      !selectedDate ||
-      !newEvent.name.trim() ||
-      !newEvent.description.trim() ||
-      !newEvent.time.trim() ||
-      (!newEvent.location.trim() && !newEvent.link.trim()) ||
-      (!newEvent.unlimited && !newEvent.capacity.trim())
-    ) {
+    if (!canCreateEvent || !selectedDate) {
       return;
     }
+
+    const formattedStartTime = formatTimeLabel(newEvent.startTime);
+    const formattedEndTime = formatTimeLabel(newEvent.endTime);
 
     setAdminEvents((currentEvents) => [
       ...currentEvents,
@@ -369,7 +467,9 @@ export function AdminDashboard({
         name: newEvent.name.trim(),
         description: newEvent.description.trim(),
         date: new Date(selectedDate),
-        time: newEvent.time.trim(),
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
+        time: `${formattedStartTime} - ${formattedEndTime}`,
         location: newEvent.location.trim(),
         link: newEvent.link.trim(),
         capacity: newEvent.unlimited ? "Unlimited" : newEvent.capacity.trim(),
@@ -380,7 +480,8 @@ export function AdminDashboard({
     setNewEvent({
       name: "",
       description: "",
-      time: "",
+      startTime: "",
+      endTime: "",
       location: "",
       link: "",
       capacity: "",
@@ -746,52 +847,87 @@ export function AdminDashboard({
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div className = "space-y-2">
-                        <Label htmlFor="admin-event-time">Time</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-event-start-time">Start time</Label>
                         <Input
-                          id="admin-event-time"
-                          value={newEvent.time}
-                          onChange={(event) =>
-                            setNewEvent({ ...newEvent, time: event.target.value })
-                          }
-                          placeholder="e.g. 6:00 PM - 8:00 PM"
+                          id="admin-event-start-time"
+                          value={newEvent.startTime}
+                          onChange={(event) => handleStartTimeChange(event.target.value)}
+                          onBlur={(event) => handleStartTimeChange(formatTimeLabel(event.target.value))}
+                          list="admin-event-time-options"
+                          placeholder="e.g. 6:00 PM"
                         />
                       </div>
 
-                      <div className = "space-y-2">
-                        <Label htmlFor="admin-event-capacity">Capacity</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-event-end-time">End time</Label>
                         <Input
-                          id="admin-event-capacity"
-                          type="number"
-                          min="1"
-                          value={newEvent.capacity}
+                          id="admin-event-end-time"
+                          value={newEvent.endTime}
                           onChange={(event) =>
+                            setNewEvent({ ...newEvent, endTime: event.target.value })
+                          }
+                          onBlur={(event) =>
                             setNewEvent({
                               ...newEvent,
-                              capacity: event.target.value,
+                              endTime: formatTimeLabel(event.target.value),
                             })
                           }
-                          disabled={newEvent.unlimited}
-                          placeholder={newEvent.unlimited ? "Unlimited" : "Enter capacity"}
+                          list="admin-event-time-options"
+                          placeholder="e.g. 7:30 PM"
+                          disabled={!newEvent.startTime.trim()}
                         />
+                        {!eventTimesAreInOrder ? (
+                          <p className="text-sm text-red-600">
+                            End time cannot be earlier than the start time.
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <datalist id="admin-event-time-options">
+                        {TIME_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.label} />
+                        ))}
+                      </datalist>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-end ">
+                          <div className="w-half md:max-w-xs space-y-2">
+                            <Label htmlFor="admin-event-capacity">Capacity</Label>
+                            <Input
+                              id="admin-event-capacity"
+                              type="number"
+                              min="1"
+                              value={newEvent.capacity}
+                              onChange={(event) =>
+                                setNewEvent({
+                                  ...newEvent,
+                                  capacity: event.target.value,
+                                })
+                              }
+                              disabled={newEvent.unlimited}
+                              placeholder={newEvent.unlimited ? "Unlimited" : "Enter capacity"}
+                            />
+                          </div>
+
+                          <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700 md:mb-0.5">
+                            <input
+                              type="checkbox"
+                              checked={newEvent.unlimited}
+                              onChange={(event) =>
+                                setNewEvent({
+                                  ...newEvent,
+                                  unlimited: event.target.checked,
+                                  capacity: event.target.checked ? "" : newEvent.capacity,
+                                })
+                              }
+                              className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                            />
+                            Unlimited
+                          </label>
+                        </div>
                       </div>
                     </div>
-
-                    <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={newEvent.unlimited}
-                        onChange={(event) =>
-                          setNewEvent({
-                            ...newEvent,
-                            unlimited: event.target.checked,
-                            capacity: event.target.checked ? "" : newEvent.capacity,
-                          })
-                        }
-                        className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
-                      />
-                      Unlimited capacity
-                    </label>
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className = "space-y-2">
@@ -825,7 +961,8 @@ export function AdminDashboard({
                     <button
                       type="button"
                       onClick={handleCreateEvent}
-                      className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800"
+                      disabled={!canCreateEvent}
+                      className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
                     >
                       Add Event
                     </button>
