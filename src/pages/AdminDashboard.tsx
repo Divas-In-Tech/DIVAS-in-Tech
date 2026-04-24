@@ -44,7 +44,7 @@ type AdminDashboardProps = {
   mentors?: Mentor[];
 };
 
-type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor";
+type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor" | "cancelEvent";
 
 type ConfirmationState = {
   action: ConfirmationAction;
@@ -57,6 +57,8 @@ type AdminEvent = {
   name: string;
   description: string;
   date: Date;
+  startDate: Date;
+  endDate: Date;
   startTime: string;
   endTime: string;
   time: string;
@@ -65,6 +67,44 @@ type AdminEvent = {
   capacity: string;
   unlimited: boolean;
 };
+
+type NewEventState = {
+  name: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  link: string;
+  capacity: string;
+  unlimited: boolean;
+  isMultiDay: boolean;
+  repeatDays: number[];
+  untilDate: string;
+};
+
+const REPEAT_DAY_OPTIONS = [
+  { label: "M", value: 1 },
+  { label: "T", value: 2 },
+  { label: "W", value: 3 },
+  { label: "Th", value: 4 },
+  { label: "F", value: 5 },
+  { label: "Sa", value: 6 },
+  { label: "Su", value: 0 },
+] as const;
+
+const createEmptyEvent = (): NewEventState => ({
+  name: "",
+  description: "",
+  startTime: "",
+  endTime: "",
+  location: "",
+  link: "",
+  capacity: "",
+  unlimited: false,
+  isMultiDay: false,
+  repeatDays: [],
+  untilDate: "",
+});
 
 const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
   const totalMinutes = index * 15;
@@ -131,6 +171,54 @@ const getTimeInMinutes = (value: string) => {
   return hours24 * 60 + parsedTime.minutes;
 };
 
+const getStartOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const isSameDay = (firstDate: Date, secondDate: Date) =>
+  getStartOfDay(firstDate).getTime() === getStartOfDay(secondDate).getTime();
+
+const parseDateInput = (value: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+};
+
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const buildRecurringEventDates = (
+  startDate: Date,
+  endDate: Date,
+  repeatDays: number[]
+) => {
+  const dates: Date[] = [];
+  const cursor = getStartOfDay(startDate);
+  const finalDate = getStartOfDay(endDate);
+
+  while (cursor.getTime() <= finalDate.getTime()) {
+    if (isSameDay(cursor, startDate) || repeatDays.includes(cursor.getDay())) {
+      dates.push(new Date(cursor));
+    }
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+};
+
 const sampleMentors: Mentor[] = [
   {
     id: "mentor-1",
@@ -146,6 +234,84 @@ const sampleMentors: Mentor[] = [
     lastName: "Patel",
     email: "monica.patel@divasintech.org",
     bio: "Product leader focused on mentorship around internships, technical interviewing, and turning ideas into well-scoped projects.",
+  },
+];
+
+const sampleAdminEvents: AdminEvent[] = [
+  {
+    id: "mock-single-day-2026-04-27",
+    name: "Resume Review Lab",
+    description: "A focused resume workshop with live feedback and recruiter tips.",
+    date: new Date(2026, 3, 27),
+    startDate: new Date(2026, 3, 27),
+    endDate: new Date(2026, 3, 27),
+    startTime: "6:00 PM",
+    endTime: "7:30 PM",
+    time: "6:00 PM - 7:30 PM",
+    location: "DIVAS Community Center",
+    link: "",
+    capacity: "25",
+    unlimited: false,
+  },
+  {
+    id: "mock-multi-day-2026-04-28-0",
+    name: "Spring Coding Sprint",
+    description: "A multi-day collaborative coding event with daily progress check-ins.",
+    date: new Date(2026, 3, 28),
+    startDate: new Date(2026, 3, 28),
+    endDate: new Date(2026, 4, 1),
+    startTime: "5:30 PM",
+    endTime: "7:00 PM",
+    time: "5:30 PM - 7:00 PM",
+    location: "Innovation Lab",
+    link: "",
+    capacity: "Unlimited",
+    unlimited: true,
+  },
+  {
+    id: "mock-multi-day-2026-04-28-1",
+    name: "Spring Coding Sprint",
+    description: "A multi-day collaborative coding event with daily progress check-ins.",
+    date: new Date(2026, 3, 29),
+    startDate: new Date(2026, 3, 28),
+    endDate: new Date(2026, 4, 1),
+    startTime: "5:30 PM",
+    endTime: "7:00 PM",
+    time: "5:30 PM - 7:00 PM",
+    location: "Innovation Lab",
+    link: "",
+    capacity: "Unlimited",
+    unlimited: true,
+  },
+  {
+    id: "mock-multi-day-2026-04-28-2",
+    name: "Spring Coding Sprint",
+    description: "A multi-day collaborative coding event with daily progress check-ins.",
+    date: new Date(2026, 3, 30),
+    startDate: new Date(2026, 3, 28),
+    endDate: new Date(2026, 4, 1),
+    startTime: "5:30 PM",
+    endTime: "7:00 PM",
+    time: "5:30 PM - 7:00 PM",
+    location: "Innovation Lab",
+    link: "",
+    capacity: "Unlimited",
+    unlimited: true,
+  },
+  {
+    id: "mock-multi-day-2026-04-28-3",
+    name: "Spring Coding Sprint",
+    description: "A multi-day collaborative coding event with daily progress check-ins.",
+    date: new Date(2026, 4, 1),
+    startDate: new Date(2026, 3, 28),
+    endDate: new Date(2026, 4, 1),
+    startTime: "5:30 PM",
+    endTime: "7:00 PM",
+    time: "5:30 PM - 7:00 PM",
+    location: "Innovation Lab",
+    link: "",
+    capacity: "Unlimited",
+    unlimited: true,
   },
 ];
 
@@ -218,17 +384,8 @@ export function AdminDashboard({
   const [confirmationCode, setConfirmationCode] = useState("");
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
-  const [newEvent, setNewEvent] = useState({
-    name: "",
-    description: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    link: "",
-    capacity: "",
-    unlimited: false,
-  });
+  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>(sampleAdminEvents);
+  const [newEvent, setNewEvent] = useState<NewEventState>(createEmptyEvent);
 
   const totalPages = Math.ceil(pendingUsers.length / pageSize);
   //TODO: Needs to sort by date eventually
@@ -280,17 +437,27 @@ export function AdminDashboard({
     if (!date) return [];
 
     return adminEvents.filter(
-      (event) => event.date.toDateString() === date.toDateString()
+      (event) => isSameDay(event.date, date)
     );
   };
 
   const hasEventsOnDate = (date: Date) => {
     return adminEvents.some(
-      (event) => event.date.toDateString() === date.toDateString()
+      (event) => isSameDay(event.date, date)
     );
   };
 
   const eventsForSelectedDate = getEventsForDate(selectedDate);
+  const minimumUntilDate =
+    selectedDate
+      ? formatDateInputValue(
+          new Date(
+            selectedDate.getFullYear(),
+            selectedDate.getMonth(),
+            selectedDate.getDate() + 1
+          )
+        )
+      : undefined;
 
   const closeConfirmationDialog = () => {
     setConfirmationState(null);
@@ -337,6 +504,11 @@ export function AdminDashboard({
       confirm: "Confirm",
       description: "This will add this mentor record:",
     },
+    cancelEvent: {
+      title: "Cancel this event?",
+      confirm: "Cancel Event",
+      description: "This will remove this scheduled event:",
+    },
   };
 
   const handleConfirmAction = () => {
@@ -369,12 +541,26 @@ export function AdminDashboard({
     Boolean(newEvent.location.trim() || newEvent.link.trim()) &&
     Boolean(newEvent.unlimited || newEvent.capacity.trim());
 
+  const multiDayUntilDate = parseDateInput(newEvent.untilDate);
+  const multiDayHasRepeatDays =
+    !newEvent.isMultiDay || newEvent.repeatDays.length > 0;
+  const multiDayUntilIsValid =
+    !newEvent.isMultiDay ||
+    (selectedDate !== undefined &&
+      multiDayUntilDate !== null &&
+      getStartOfDay(multiDayUntilDate).getTime() >
+        getStartOfDay(selectedDate).getTime());
+
   const eventTimesAreInOrder =
     !newEvent.startTime ||
     !newEvent.endTime ||
     getTimeInMinutes(newEvent.endTime) >= getTimeInMinutes(newEvent.startTime);
 
-  const canCreateEvent = eventHasRequiredFields && eventTimesAreInOrder;
+  const canCreateEvent =
+    eventHasRequiredFields &&
+    eventTimesAreInOrder &&
+    multiDayHasRepeatDays &&
+    multiDayUntilIsValid;
 
   const handleStartTimeChange = (value: string) => {
     setNewEvent((currentEvent) => {
@@ -392,6 +578,24 @@ export function AdminDashboard({
         endTime: shouldResetEndTime ? "" : currentEvent.endTime,
       };
     });
+  };
+
+  const handleToggleMultiDay = (checked: boolean) => {
+    setNewEvent((currentEvent) => ({
+      ...currentEvent,
+      isMultiDay: checked,
+      repeatDays: checked ? currentEvent.repeatDays : [],
+      untilDate: checked ? currentEvent.untilDate : "",
+    }));
+  };
+
+  const handleRepeatDayChange = (dayValue: number, checked: boolean) => {
+    setNewEvent((currentEvent) => ({
+      ...currentEvent,
+      repeatDays: checked
+        ? [...currentEvent.repeatDays, dayValue].sort((firstDay, secondDay) => firstDay - secondDay)
+        : currentEvent.repeatDays.filter((currentDay) => currentDay !== dayValue),
+    }));
   };
 
   const handleAddMentor = () => {
@@ -452,6 +656,12 @@ export function AdminDashboard({
     );
   };
 
+  const handleCancelEvent = (eventId: string) => {
+    setAdminEvents((currentEvents) =>
+      currentEvents.filter((event) => event.id !== eventId)
+    );
+  };
+
   const handleCreateEvent = () => {
     if (!canCreateEvent || !selectedDate) {
       return;
@@ -459,14 +669,25 @@ export function AdminDashboard({
 
     const formattedStartTime = formatTimeLabel(newEvent.startTime);
     const formattedEndTime = formatTimeLabel(newEvent.endTime);
+    const startDate = getStartOfDay(selectedDate);
+    const endDate =
+      newEvent.isMultiDay && multiDayUntilDate
+        ? getStartOfDay(multiDayUntilDate)
+        : startDate;
+    const eventDates = newEvent.isMultiDay
+      ? buildRecurringEventDates(startDate, endDate, newEvent.repeatDays)
+      : [startDate];
+    const seriesId = Date.now().toString();
 
     setAdminEvents((currentEvents) => [
       ...currentEvents,
-      {
-        id: Date.now().toString(),
+      ...eventDates.map((eventDate, index) => ({
+        id: `${seriesId}-${index}`,
         name: newEvent.name.trim(),
         description: newEvent.description.trim(),
-        date: new Date(selectedDate),
+        date: new Date(eventDate),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
         startTime: formattedStartTime,
         endTime: formattedEndTime,
         time: `${formattedStartTime} - ${formattedEndTime}`,
@@ -474,19 +695,10 @@ export function AdminDashboard({
         link: newEvent.link.trim(),
         capacity: newEvent.unlimited ? "Unlimited" : newEvent.capacity.trim(),
         unlimited: newEvent.unlimited,
-      },
+      })),
     ]);
 
-    setNewEvent({
-      name: "",
-      description: "",
-      startTime: "",
-      endTime: "",
-      location: "",
-      link: "",
-      capacity: "",
-      unlimited: false,
-    });
+    setNewEvent(createEmptyEvent());
   };
 
   return (
@@ -846,6 +1058,77 @@ export function AdminDashboard({
                       />
                     </div>
 
+                    <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <label className="flex items-center gap-3 text-sm font-medium text-gray-900">
+                        <input
+                          id="admin-event-multi-day"
+                          type="checkbox"
+                          checked={newEvent.isMultiDay}
+                          onChange={(event) => handleToggleMultiDay(event.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                        />
+                        Multi-day event
+                      </label>
+
+                      {newEvent.isMultiDay ? (
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                          <div className="space-y-2">
+                            <Label>Repeat every:</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {REPEAT_DAY_OPTIONS.map((dayOption) => (
+                                <label
+                                  key={dayOption.label}
+                                  className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-2 text-sm text-gray-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={newEvent.repeatDays.includes(dayOption.value)}
+                                    onChange={(event) =>
+                                      handleRepeatDayChange(
+                                        dayOption.value,
+                                        event.target.checked
+                                      )
+                                    }
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                                  />
+                                  <span>{dayOption.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              The selected calendar date is always included as the start date.
+                            </p>
+                            {!multiDayHasRepeatDays ? (
+                              <p className="text-sm text-red-600">
+                                Select at least one weekday to repeat this event.
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-event-until-date">Until:</Label>
+                            <Input
+                              id="admin-event-until-date"
+                              type="date"
+                              value={newEvent.untilDate}
+                              min={minimumUntilDate}
+                              onChange={(event) =>
+                                setNewEvent({
+                                  ...newEvent,
+                                  untilDate: event.target.value,
+                                })
+                              }
+                            />
+                            {!multiDayUntilIsValid ? (
+                              <p className="text-sm text-red-600">
+                                Select a future date after the start date.
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="admin-event-start-time">Start time</Label>
@@ -994,9 +1277,24 @@ export function AdminDashboard({
                         className="rounded-lg border border-gray-200 bg-gray-50 p-4"
                       >
                         <div className="mb-2 flex items-start justify-between gap-4">
-                          <h4 className="text-lg font-semibold text-gray-900">
-                            {event.name}
-                          </h4>
+                          <div className="space-y-2">
+                            <h4 className="text-lg font-semibold text-gray-900">
+                              {event.name}
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openConfirmationDialog(
+                                  "cancelEvent",
+                                  event.name,
+                                  () => handleCancelEvent(event.id)
+                                )
+                              }
+                              className="inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                            >
+                              Cancel Event
+                            </button>
+                          </div>
                           <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
                             {event.capacity}
                           </span>
