@@ -6,6 +6,7 @@ import { AdminDashboard } from "../pages/AdminDashboard";
 describe("AdminDashboard", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   const defaultPendingUsers = [
@@ -86,6 +87,14 @@ describe("AdminDashboard", () => {
       .closest("section");
 
     return within(accountSearchSection);
+  };
+
+  const getCalendarManagementControls = () => {
+    const calendarManagementSection = screen
+      .getByRole("heading", { name: /calendar management/i })
+      .closest("section");
+
+    return within(calendarManagementSection);
   };
 
   test("renders pending user data passed into the table", () => {
@@ -330,6 +339,132 @@ describe("AdminDashboard", () => {
       screen.getByRole("heading", { name: /delete this account\?/i })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/confirmation code/i)).toBeInTheDocument();
+  });
+
+  test("shows multi-day controls and requires a future until date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T12:00:00"));
+
+    renderAdminDashboard();
+
+    const calendarControls = getCalendarManagementControls();
+
+    expect(
+      screen.queryByLabelText(/until:/i)
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/multi-day event/i));
+
+    expect(screen.getByText(/repeat every:/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/selected calendar date is always included as the start date/i)
+    ).toBeInTheDocument();
+
+    const untilDateInput = screen.getByLabelText(/until:/i);
+    expect(untilDateInput).toHaveAttribute("min", "2026-05-06");
+
+    fireEvent.click(screen.getByLabelText(/^Th$/i));
+    fireEvent.change(untilDateInput, {
+      target: { value: "2026-05-05" },
+    });
+
+    expect(
+      screen.getByText(/select a future date after the start date/i)
+    ).toBeInTheDocument();
+    expect(
+      calendarControls.getByRole("button", { name: /add event/i })
+    ).toBeDisabled();
+  });
+
+  test("creates a multi-day event on the start date and matching repeat days through the inclusive end date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-05T12:00:00"));
+
+    renderAdminDashboard();
+
+    const calendarControls = getCalendarManagementControls();
+
+    fireEvent.change(screen.getByLabelText(/event name/i), {
+      target: { value: "Community Standup" },
+    });
+    fireEvent.change(screen.getByLabelText(/description/i), {
+      target: { value: "Weekly planning touchpoint for volunteers." },
+    });
+    fireEvent.change(screen.getByLabelText(/start time/i), {
+      target: { value: "6:00 PM" },
+    });
+    fireEvent.blur(screen.getByLabelText(/start time/i), {
+      target: { value: "6:00 PM" },
+    });
+    fireEvent.change(screen.getByLabelText(/end time/i), {
+      target: { value: "7:00 PM" },
+    });
+    fireEvent.blur(screen.getByLabelText(/end time/i), {
+      target: { value: "7:00 PM" },
+    });
+    fireEvent.change(screen.getByLabelText(/capacity/i), {
+      target: { value: "20" },
+    });
+    fireEvent.change(screen.getByLabelText(/location/i), {
+      target: { value: "Innovation Lab" },
+    });
+
+    fireEvent.click(screen.getByLabelText(/multi-day event/i));
+    fireEvent.click(screen.getByLabelText(/^Th$/i));
+    fireEvent.change(screen.getByLabelText(/until:/i), {
+      target: { value: "2026-05-07" },
+    });
+
+    fireEvent.click(calendarControls.getByRole("button", { name: /add event/i }));
+
+    expect(calendarControls.getByText("Community Standup")).toBeInTheDocument();
+    expect(
+      calendarControls.getByText(/weekly planning touchpoint for volunteers/i)
+    ).toBeInTheDocument();
+
+    const selectedWeekRow = calendarControls.getByRole("row", {
+      name: /3 4 5 6 7 8 9/i,
+    });
+
+    fireEvent.click(
+      within(selectedWeekRow).getByRole("gridcell", { name: "6" })
+    );
+    expect(
+      calendarControls.getByText(/no events scheduled for this date yet/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(selectedWeekRow).getByRole("gridcell", { name: "7" })
+    );
+    expect(calendarControls.getByText("Community Standup")).toBeInTheDocument();
+  });
+
+  test("cancels a scheduled event from the selected date", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-27T12:00:00"));
+
+    renderAdminDashboard();
+
+    const calendarControls = getCalendarManagementControls();
+
+    expect(calendarControls.getByText("Resume Review Lab")).toBeInTheDocument();
+
+    fireEvent.click(
+      calendarControls.getByRole("button", { name: /cancel event/i })
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /cancel this event\?/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel event/i }));
+
+    expect(
+      calendarControls.queryByText("Resume Review Lab")
+    ).not.toBeInTheDocument();
+    expect(
+      calendarControls.getByText(/no events scheduled for this date yet/i)
+    ).toBeInTheDocument();
   });
 
   test("searches for a mentor and displays matching mentor details", () => {
