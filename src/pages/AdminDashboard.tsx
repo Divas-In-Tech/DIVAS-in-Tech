@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../supabaseConnection";
 import { Calendar } from "../components/ui/calendar";
 import { Card } from "../components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -8,11 +9,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Calendar as CalendarIcon, Crown, Link as LinkIcon, MapPin, Search, TriangleAlert, UserCheck, UserX, Users } from "lucide-react";
 
-/* TODO: Most of this right below here is prop data used to test. Doesn't
-  guarantee future data appearance-- must be changed to match
-  actual database structure */
-
 export type PendingUser = {
+  id: string;
   firstName: string;
   lastName: string;
   accountType: string;
@@ -21,6 +19,7 @@ export type PendingUser = {
 };
 
 export type SearchableUser = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -29,16 +28,21 @@ export type SearchableUser = {
   joinedAt: string;
 };
 
-type AdminDashboardProps = {
-  pendingUsers?: PendingUser[];
-  searchableUsers?: SearchableUser[];
+export type Mentor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  bio: string;
+  photoName?: string;
 };
 
-type ConfirmationAction = "accept" | "reject" | "promote" | "delete";
+type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor" | "cancelEvent";
 
 type ConfirmationState = {
   action: ConfirmationAction;
   targetLabel: string;
+  onConfirm?: () => void;
 } | null;
 
 type AdminEvent = {
@@ -46,6 +50,10 @@ type AdminEvent = {
   name: string;
   description: string;
   date: Date;
+  startDate: Date;
+  endDate: Date;
+  startTime: string;
+  endTime: string;
   time: string;
   location: string;
   link: string;
@@ -53,84 +61,266 @@ type AdminEvent = {
   unlimited: boolean;
 };
 
-export function AdminDashboard({
-  pendingUsers = [{
-    firstName: "Jane",
-    lastName: "Doe",
-    accountType: "Student",
-    eventAttended: "Workshop 1",
-    createdAt: "01/06/2024"
-  },
-  {
-    firstName: "John",
-    lastName: "Smith",
-    accountType: "Student",
-    eventAttended: "Workshop 2",
-    createdAt: "04/16/2026"
-  }],
-  searchableUsers = [
-    {
-      firstName: "Janie",
-      lastName: "Doe",
-      email: "janie.doe@divasintech.org",
-      accountType: "Student",
-      status: "Active",
-      joinedAt: "01/06/2024",
-    },
-    {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith@divasintech.org",
-      accountType: "Student",
-      status: "Pending",
-      joinedAt: "04/16/2026",
-    },
-    {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith2@divasintech.org",
-      accountType: "Student",
-      status: "Pending",
-      joinedAt: "04/01/2026",
-    },
-  ],
-}: AdminDashboardProps) {
-  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
+type NewEventState = {
+  name: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  link: string;
+  capacity: string;
+  unlimited: boolean;
+  isMultiDay: boolean;
+  repeatDays: number[];
+  untilDate: string;
+};
+
+const REPEAT_DAY_OPTIONS = [
+  { label: "M", value: 1 },
+  { label: "T", value: 2 },
+  { label: "W", value: 3 },
+  { label: "Th", value: 4 },
+  { label: "F", value: 5 },
+  { label: "Sa", value: 6 },
+  { label: "Su", value: 0 },
+] as const;
+
+const createEmptyEvent = (): NewEventState => ({
+  name: "",
+  description: "",
+  startTime: "",
+  endTime: "",
+  location: "",
+  link: "",
+  capacity: "",
+  unlimited: false,
+  isMultiDay: false,
+  repeatDays: [],
+  untilDate: "",
+});
+
+const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+  const totalMinutes = index * 15;
+  const hours24 = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const meridiem = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+
+  return {
+    value: `${hours24.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`,
+    label: `${hours12}:${minutes.toString().padStart(2, "0")} ${meridiem}`,
+    minutes: totalMinutes,
+  };
+});
+
+const parseTimeInput = (value: string) => {
+  const normalizedValue = value.trim().toUpperCase().replace(/\s+/g, "");
+  const match = normalizedValue.match(/^(\d{1,2})(?::(\d{1,2}))?(AM|PM)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = match[2] ? Number(match[2]) : 0;
+  const period = match[3];
+
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  return { hours, minutes, period };
+};
+
+const formatTimeLabel = (value: string) => {
+  const parsedTime = parseTimeInput(value);
+
+  if (!parsedTime) {
+    return value.trim();
+  }
+
+  return `${parsedTime.hours}:${parsedTime.minutes.toString().padStart(2, "0")} ${parsedTime.period}`;
+};
+
+const getTimeInMinutes = (value: string) => {
+  const parsedTime = parseTimeInput(value);
+
+  if (!parsedTime) {
+    return -1;
+  }
+
+  const normalizedHour = parsedTime.hours % 12;
+  const hours24 = parsedTime.period === "PM" ? normalizedHour + 12 : normalizedHour;
+
+  return hours24 * 60 + parsedTime.minutes;
+};
+
+const getStartOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const isSameDay = (firstDate: Date, secondDate: Date) =>
+  getStartOfDay(firstDate).getTime() === getStartOfDay(secondDate).getTime();
+
+const parseDateInput = (value: string) => {
+  if (!value) {
+    return null;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+};
+
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const buildRecurringEventDates = (startDate: Date, endDate: Date, repeatDays: number[]) => {
+  const dates: Date[] = [];
+  const cursor = getStartOfDay(startDate);
+  const finalDate = getStartOfDay(endDate);
+
+  while (cursor.getTime() <= finalDate.getTime()) {
+    if (isSameDay(cursor, startDate) || repeatDays.includes(cursor.getDay())) {
+      dates.push(new Date(cursor));
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return dates;
+};
+
+const toTimetz = (s: string): string => {
+  const m = s.trim().toUpperCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+  if (!m) return s;
+  let h = Number(m[1]);
+  const min = m[2] ? Number(m[2]) : 0;
+  if (m[3] === "PM" && h !== 12) h += 12;
+  if (m[3] === "AM" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`;
+};
+
+const fmtTimetz = (t: string | null): string => {
+  if (!t) return "";
+  const [hh, mm] = t.split(":");
+  const h = Number(hh);
+  return `${h % 12 || 12}:${mm} ${h >= 12 ? "PM" : "AM"}`;
+};
+
+export function AdminDashboard() {
+  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000;
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pendingUsers]);
 
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [searchableUsers, setSearchableUsers] = useState<SearchableUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<typeof searchableUsers>([]);
+  const [selectedUsers, setSelectedUsers] = useState<SearchableUser[]>([]);
   const [searchAttempted, setSearchAttempted] = useState(false);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [mentorSearchQuery, setMentorSearchQuery] = useState("");
+  const [selectedMentors, setSelectedMentors] = useState<Mentor[]>([]);
+  const [mentorSearchAttempted, setMentorSearchAttempted] = useState(false);
+  const [newMentor, setNewMentor] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    bio: "",
+    photoName: "",
+    photoFile: null as File | null,
+  });
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
   const [confirmationCode, setConfirmationCode] = useState("");
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
-  const [newEvent, setNewEvent] = useState({
-    name: "",
-    description: "",
-    time: "",
-    location: "",
-    link: "",
-    capacity: "",
-    unlimited: false,
-  });
+  const [newEvent, setNewEvent] = useState<NewEventState>(createEmptyEvent);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pendingUsers]);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("approved", false)
+        .order("pending_since", { ascending: true });
+
+      if (error) return;
+
+      setPendingUsers(
+        (data ?? []).map((r: any) => ({
+          id: r.email,
+          firstName: r.first_name,
+          lastName: r.last_name,
+          accountType: r.role ?? "",
+          eventAttended: r.event_attended ?? "",
+          createdAt: r.pending_since ?? "",
+        }))
+      );
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("calendar")
+        .select("*")
+        .order("start_date", { ascending: true });
+
+      if (error) return;
+
+      const mapped: AdminEvent[] = [];
+      for (const r of data ?? []) {
+        const start = new Date(r.start_date);
+        const end = new Date(r.end_date);
+        const startTime = fmtTimetz(r.time_start);
+        const endTime = fmtTimetz(r.time_end);
+        const time = startTime && endTime ? `${startTime} - ${endTime}` : startTime;
+        const cursor = getStartOfDay(start);
+        const finalDate = getStartOfDay(end);
+        while (cursor.getTime() <= finalDate.getTime()) {
+          mapped.push({
+            id: `${r.id}-${cursor.getTime()}`,
+            name: r.name,
+            description: r.description ?? "",
+            date: new Date(cursor),
+            startDate: start,
+            endDate: end,
+            startTime,
+            endTime,
+            time,
+            location: r.location ?? "",
+            link: r.link ?? "",
+            capacity: r.num_of_attendees !== null ? String(r.num_of_attendees) : "Unlimited",
+            unlimited: r.num_of_attendees === null,
+          });
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+      setAdminEvents(mapped);
+    })();
+  }, []);
 
   const totalPages = Math.ceil(pendingUsers.length / pageSize);
-  //TODO: Needs to sort by date eventually
   const paginatedUsers = pendingUsers.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-
     setSearchAttempted(true);
 
     if (!normalizedQuery) {
@@ -138,29 +328,79 @@ export function AdminDashboard({
       return;
     }
 
-    const matchedUsers = searchableUsers.filter((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-      return fullName.includes(normalizedQuery) || user.email.toLowerCase().includes(normalizedQuery);
+    const { data: d1 } = await supabase.from("users").select("*").ilike("first_name", `%${normalizedQuery}%`);
+    const { data: d2 } = await supabase.from("users").select("*").ilike("last_name", `%${normalizedQuery}%`);
+
+    const seen = new Set<string>();
+    const merged = [...(d1 ?? []), ...(d2 ?? [])].filter((u: any) => {
+      if (seen.has(u.email)) return false;
+      seen.add(u.email);
+      return true;
     });
 
-    setSelectedUsers(matchedUsers);
+    setSelectedUsers(
+      merged.map((r: any) => ({
+        id: r.email,
+        firstName: r.first_name,
+        lastName: r.last_name,
+        email: r.email,
+        accountType: r.role ?? "",
+        status: r.approved ? "Active" : "Pending",
+        joinedAt: r.pending_since ?? "",
+      }))
+    );
+  };
+
+  const handleMentorSearch = async () => {
+    const normalizedQuery = mentorSearchQuery.trim().toLowerCase();
+    setMentorSearchAttempted(true);
+
+    if (!normalizedQuery) {
+      setSelectedMentors([]);
+      return;
+    }
+
+    const { data: d1 } = await supabase.from("mentors").select("*").ilike("first_name", `%${normalizedQuery}%`);
+    const { data: d2 } = await supabase.from("mentors").select("*").ilike("last_name", `%${normalizedQuery}%`);
+
+    const seen = new Set<string>();
+    const merged = [...(d1 ?? []), ...(d2 ?? [])].filter((m: any) => {
+      if (seen.has(m.mentor_id)) return false;
+      seen.add(m.mentor_id);
+      return true;
+    });
+
+    setSelectedMentors(
+      merged.map((r: any) => ({
+        id: r.mentor_id,
+        firstName: r.first_name,
+        lastName: r.last_name,
+        email: r.email,
+        bio: r.bio,
+        photoName: r.photo ?? undefined,
+      }))
+    );
   };
 
   const getEventsForDate = (date: Date | undefined) => {
     if (!date) return [];
-
-    return adminEvents.filter(
-      (event) => event.date.toDateString() === date.toDateString()
-    );
+    return adminEvents.filter((event) => isSameDay(event.date, date));
   };
 
   const hasEventsOnDate = (date: Date) => {
-    return adminEvents.some(
-      (event) => event.date.toDateString() === date.toDateString()
-    );
+    return adminEvents.some((event) => isSameDay(event.date, date));
   };
 
   const eventsForSelectedDate = getEventsForDate(selectedDate);
+  const minimumUntilDate = selectedDate
+    ? formatDateInputValue(
+        new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate() + 1
+        )
+      )
+    : undefined;
 
   const closeConfirmationDialog = () => {
     setConfirmationState(null);
@@ -169,14 +409,14 @@ export function AdminDashboard({
 
   const openConfirmationDialog = (
     action: ConfirmationAction,
-    targetLabel: string
+    targetLabel: string,
+    onConfirm?: () => void
   ) => {
-    setConfirmationState({ action, targetLabel });
+    setConfirmationState({ action, targetLabel, onConfirm });
     setConfirmationCode("");
   };
 
-  const requiresConfirmationCode =
-    confirmationState?.action === "promote" || confirmationState?.action === "delete";
+  const requiresConfirmationCode = false;
 
   const actionLabels: Record<ConfirmationAction, { title: string; confirm: string; description: string; codeLabel?: string }> = {
     accept: {
@@ -193,13 +433,21 @@ export function AdminDashboard({
       title: "Promote this user to admin?",
       confirm: "Confirm",
       description: "This will grant this account elevated admin access:",
-      codeLabel: "Confirmation code",
     },
     delete: {
       title: "Delete this account?",
       confirm: "Confirm",
       description: "This will remove this account:",
-      codeLabel: "Confirmation code",
+    },
+    addMentor: {
+      title: "Add this mentor?",
+      confirm: "Confirm",
+      description: "This will add this mentor record:",
+    },
+    cancelEvent: {
+      title: "Cancel this event?",
+      confirm: "Cancel Event",
+      description: "This will remove this scheduled event:",
     },
   };
 
@@ -208,50 +456,252 @@ export function AdminDashboard({
       return;
     }
 
+    confirmationState?.onConfirm?.();
     closeConfirmationDialog();
   };
 
-  const handleCreateEvent = () => {
-    if (
-      !selectedDate ||
-      !newEvent.name.trim() ||
-      !newEvent.description.trim() ||
-      !newEvent.time.trim() ||
-      (!newEvent.location.trim() && !newEvent.link.trim()) ||
-      (!newEvent.unlimited && !newEvent.capacity.trim())
-    ) {
-      return;
+  const mentorBioWordCount = newMentor.bio.trim().split(/\s+/).filter(Boolean).length;
+  const mentorBioTooLong = mentorBioWordCount > 200;
+  const canAddMentor =
+    newMentor.firstName.trim() &&
+    newMentor.lastName.trim() &&
+    newMentor.email.trim() &&
+    newMentor.bio.trim() &&
+    !mentorBioTooLong;
+
+  const eventHasRequiredFields =
+    Boolean(selectedDate) &&
+    Boolean(newEvent.name.trim()) &&
+    Boolean(newEvent.description.trim()) &&
+    Boolean(newEvent.startTime.trim()) &&
+    Boolean(newEvent.endTime.trim()) &&
+    Boolean(newEvent.location.trim() || newEvent.link.trim()) &&
+    Boolean(newEvent.unlimited || newEvent.capacity.trim());
+
+  const multiDayUntilDate = parseDateInput(newEvent.untilDate);
+  const multiDayHasRepeatDays = !newEvent.isMultiDay || newEvent.repeatDays.length > 0;
+  const multiDayUntilIsValid =
+    !newEvent.isMultiDay ||
+    (selectedDate !== undefined &&
+      multiDayUntilDate !== null &&
+      getStartOfDay(multiDayUntilDate).getTime() > getStartOfDay(selectedDate).getTime());
+
+  const eventTimesAreInOrder =
+    !newEvent.startTime ||
+    !newEvent.endTime ||
+    getTimeInMinutes(newEvent.endTime) >= getTimeInMinutes(newEvent.startTime);
+
+  const canCreateEvent =
+    eventHasRequiredFields &&
+    eventTimesAreInOrder &&
+    multiDayHasRepeatDays &&
+    multiDayUntilIsValid;
+
+  const handleStartTimeChange = (value: string) => {
+    setNewEvent((currentEvent) => {
+      const nextStartTime = value;
+      const nextStartTimeMinutes = getTimeInMinutes(nextStartTime);
+      const currentEndTimeMinutes = getTimeInMinutes(currentEvent.endTime);
+      const shouldResetEndTime =
+        nextStartTimeMinutes >= 0 &&
+        currentEndTimeMinutes >= 0 &&
+        currentEndTimeMinutes < nextStartTimeMinutes;
+
+      return {
+        ...currentEvent,
+        startTime: nextStartTime,
+        endTime: shouldResetEndTime ? "" : currentEvent.endTime,
+      };
+    });
+  };
+
+  const handleToggleMultiDay = (checked: boolean) => {
+    setNewEvent((currentEvent) => ({
+      ...currentEvent,
+      isMultiDay: checked,
+      repeatDays: checked ? currentEvent.repeatDays : [],
+      untilDate: checked ? currentEvent.untilDate : "",
+    }));
+  };
+
+  const handleRepeatDayChange = (dayValue: number, checked: boolean) => {
+    setNewEvent((currentEvent) => ({
+      ...currentEvent,
+      repeatDays: checked
+        ? [...currentEvent.repeatDays, dayValue].sort((a, b) => a - b)
+        : currentEvent.repeatDays.filter((d) => d !== dayValue),
+    }));
+  };
+
+  const handleAddMentor = async () => {
+    if (!canAddMentor) return;
+
+    let photo = "";
+    if (newMentor.photoFile) {
+      const path = `${Date.now()}-${newMentor.photoFile.name}`;
+      const { error: upErr } = await supabase.storage.from("mentor-photos").upload(path, newMentor.photoFile);
+      if (!upErr) {
+        photo = supabase.storage.from("mentor-photos").getPublicUrl(path).data.publicUrl;
+      }
     }
+
+    const { data, error } = await supabase
+      .from("mentors")
+      .insert({
+        first_name: newMentor.firstName.trim(),
+        last_name: newMentor.lastName.trim(),
+        email: newMentor.email.trim(),
+        bio: newMentor.bio.trim(),
+        photo,
+      })
+      .select()
+      .single();
+
+    if (error) { console.error("Add mentor error:", error); return; }
+
+    const mentorToAdd: Mentor = {
+      id: (data as any).mentor_id,
+      firstName: (data as any).first_name,
+      lastName: (data as any).last_name,
+      email: (data as any).email,
+      bio: (data as any).bio,
+      photoName: (data as any).photo || undefined,
+    };
+
+    setMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
+
+    const normalizedQuery = mentorSearchQuery.trim().toLowerCase();
+    if (normalizedQuery) {
+      const fullName = `${mentorToAdd.firstName} ${mentorToAdd.lastName}`.toLowerCase();
+      const matchesSearch =
+        fullName.includes(normalizedQuery) ||
+        mentorToAdd.email.toLowerCase().includes(normalizedQuery);
+      if (matchesSearch) {
+        setSelectedMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
+      }
+    }
+
+    setNewMentor({ firstName: "", lastName: "", email: "", bio: "", photoName: "", photoFile: null });
+  };
+
+  const handleOpenAddMentorConfirmation = () => {
+    if (!canAddMentor) return;
+
+    openConfirmationDialog(
+      "addMentor",
+      `${newMentor.firstName.trim()} ${newMentor.lastName.trim()}`,
+      handleAddMentor
+    );
+  };
+
+  const handleRemoveMentor = async (mentorId: string) => {
+    const { error } = await supabase.from("mentors").delete().eq("mentor_id", mentorId);
+    if (error) { console.error("Remove mentor error:", error); return; }
+
+    setMentors((currentMentors) => currentMentors.filter((mentor) => mentor.id !== mentorId));
+    setSelectedMentors((currentMentors) => currentMentors.filter((mentor) => mentor.id !== mentorId));
+  };
+
+  const handleAcceptUser = async (user: PendingUser) => {
+    const { error } = await supabase
+      .from("users")
+      .update({ approved: true, pending_since: null })
+      .eq("email", user.id);
+    if (error) { console.error("Accept user error:", error); return; }
+    setPendingUsers((prev) => prev.filter((u) => u.id !== user.id));
+  };
+
+  const handleRejectUser = async (user: PendingUser) => {
+    const { error } = await supabase.from("users").delete().eq("email", user.id);
+    if (error) { console.error("Reject user error:", error); return; }
+    setPendingUsers((prev) => prev.filter((u) => u.id !== user.id));
+  };
+
+  const handlePromoteUser = async (user: SearchableUser) => {
+    const { error } = await supabase.from("users").update({ role: "admin" }).eq("email", user.email);
+    if (error) { console.error("Promote user error:", error); return; }
+    setSelectedUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, accountType: "admin" } : u)));
+  };
+
+  const handleDeleteUser = async (user: SearchableUser) => {
+    const { error } = await supabase.from("users").delete().eq("email", user.email);
+    if (error) { console.error("Delete user error:", error); return; }
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== user.id));
+  };
+
+  const handleCancelEvent = async (eventId: string) => {
+    const dbId = eventId.split("-")[0];
+    const { error } = await supabase.from("calendar").delete().eq("id", Number(dbId));
+    if (error) { console.error("Cancel event error:", error); return; }
+    setAdminEvents((currentEvents) => currentEvents.filter((event) => !event.id.startsWith(dbId)));
+  };
+
+  const handleCreateEvent = async () => {
+    if (!canCreateEvent || !selectedDate) return;
+
+    const formattedStartTime = formatTimeLabel(newEvent.startTime);
+    const formattedEndTime = formatTimeLabel(newEvent.endTime);
+    const startDate = getStartOfDay(selectedDate);
+    const endDate =
+      newEvent.isMultiDay && multiDayUntilDate
+        ? getStartOfDay(multiDayUntilDate)
+        : startDate;
+
+    const { data, error } = await supabase
+      .from("calendar")
+      .insert({
+        name: newEvent.name.trim(),
+        description: newEvent.description.trim(),
+        start_date: formatDateInputValue(startDate),
+        end_date: formatDateInputValue(endDate),
+        time_start: toTimetz(newEvent.startTime),
+        time_end: toTimetz(newEvent.endTime),
+        num_of_attendees: newEvent.unlimited ? null : Number(newEvent.capacity) || null,
+        location: newEvent.location.trim(),
+        link: newEvent.link.trim(),
+        multi_day: newEvent.isMultiDay,
+        monday: newEvent.repeatDays.includes(1),
+        tuesday: newEvent.repeatDays.includes(2),
+        wednesday: newEvent.repeatDays.includes(3),
+        thursday: newEvent.repeatDays.includes(4),
+        friday: newEvent.repeatDays.includes(5),
+        saturday: newEvent.repeatDays.includes(6),
+        sunday: newEvent.repeatDays.includes(0),
+      })
+      .select()
+      .single();
+
+    if (error) { console.error("Create event error:", error); return; }
+    const r = data as any;
+    const time = `${formattedStartTime} - ${formattedEndTime}`;
+    const eventDates = newEvent.isMultiDay
+      ? buildRecurringEventDates(startDate, endDate, newEvent.repeatDays)
+      : [startDate];
 
     setAdminEvents((currentEvents) => [
       ...currentEvents,
-      {
-        id: Date.now().toString(),
+      ...eventDates.map((eventDate, index) => ({
+        id: `${r.id}-${index}`,
         name: newEvent.name.trim(),
         description: newEvent.description.trim(),
-        date: new Date(selectedDate),
-        time: newEvent.time.trim(),
+        date: new Date(eventDate),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
+        time,
         location: newEvent.location.trim(),
         link: newEvent.link.trim(),
         capacity: newEvent.unlimited ? "Unlimited" : newEvent.capacity.trim(),
         unlimited: newEvent.unlimited,
-      },
+      })),
     ]);
 
-    setNewEvent({
-      name: "",
-      description: "",
-      time: "",
-      location: "",
-      link: "",
-      capacity: "",
-      unlimited: false,
-    });
+    setNewEvent(createEmptyEvent());
   };
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <section className="relative h-[100px] overflow-hidden">
         <div className="absolute inset-0 bg-pink-700 flex items-center justify-center">
           <div className="text-center text-white px-4 max-w-4xl">
@@ -260,8 +710,6 @@ export function AdminDashboard({
         </div>
       </section>
 
-
-      {/* Pending Users Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Pending Users</h2>
@@ -283,65 +731,67 @@ export function AdminDashboard({
                     const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() >= warningThresholdMs;
 
                     return (
-                    <tr
-                      key={`${user.firstName}-${user.lastName}-${user.createdAt}`}
-                      className={isOlderThan14Days ? "bg-red-200 hover:bg-red-300" : "hover:bg-gray-50"}
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.firstName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.lastName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.accountType}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex items-center gap-2">
-                          <span>{user.createdAt}</span>
-                          {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex items-center gap-3 whitespace-nowrap">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={`Activate ${user.firstName} ${user.lastName}`}
-                                onClick={() =>
-                                  openConfirmationDialog(
-                                    "accept",
-                                    `${user.firstName} ${user.lastName}`
-                                  )
-                                }
-                                className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
-                              >
-                                <UserCheck className="h-4 w-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Activate {user.firstName} {user.lastName}
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={`Reject ${user.firstName} ${user.lastName}`}
-                                onClick={() =>
-                                  openConfirmationDialog(
-                                    "reject",
-                                    `${user.firstName} ${user.lastName}`
-                                  )
-                                }
-                                className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Reject {user.firstName} {user.lastName}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
+                      <tr
+                        key={user.id}
+                        className={isOlderThan14Days ? "bg-red-200 hover:bg-red-300" : "hover:bg-gray-50"}
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.firstName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.lastName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.accountType}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="flex items-center gap-2">
+                            <span>{user.createdAt}</span>
+                            {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="flex items-center gap-3 whitespace-nowrap">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Activate ${user.firstName} ${user.lastName}`}
+                                  onClick={() =>
+                                    openConfirmationDialog(
+                                      "accept",
+                                      `${user.firstName} ${user.lastName}`,
+                                      () => handleAcceptUser(user)
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Activate {user.firstName} {user.lastName}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Reject ${user.firstName} ${user.lastName}`}
+                                  onClick={() =>
+                                    openConfirmationDialog(
+                                      "reject",
+                                      `${user.firstName} ${user.lastName}`,
+                                      () => handleRejectUser(user)
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Reject {user.firstName} {user.lastName}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })
                 ) : (
@@ -361,11 +811,9 @@ export function AdminDashboard({
               >
                 Previous
               </button>
-
               <span className="text-sm text-gray-600">
                 Page {currentPage} of {totalPages}
               </span>
-
               <button
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage === totalPages}
@@ -378,7 +826,6 @@ export function AdminDashboard({
         </div>
       </section>
 
-      {/* Account Search Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Account Search</h2>
@@ -434,7 +881,8 @@ export function AdminDashboard({
                           onClick={() =>
                             openConfirmationDialog(
                               "promote",
-                              `${user.firstName} ${user.lastName}`
+                              `${user.firstName} ${user.lastName}`,
+                              () => handlePromoteUser(user)
                             )
                           }
                           className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
@@ -448,7 +896,8 @@ export function AdminDashboard({
                           onClick={() =>
                             openConfirmationDialog(
                               "delete",
-                              `${user.firstName} ${user.lastName}`
+                              `${user.firstName} ${user.lastName}`,
+                              () => handleDeleteUser(user)
                             )
                           }
                           className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
@@ -486,7 +935,8 @@ export function AdminDashboard({
                   {actionLabels[confirmationState.action].title}
                 </DialogTitle>
                 <DialogDescription className="text-gray-600">
-                  {actionLabels[confirmationState.action].description} <span className="font-medium text-gray-800">{confirmationState.targetLabel}</span>
+                  {actionLabels[confirmationState.action].description}{" "}
+                  <span className="font-medium text-gray-800">{confirmationState.targetLabel}</span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -526,7 +976,6 @@ export function AdminDashboard({
         </DialogContent>
       </Dialog>
 
-      {/* Caldenar Management Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Calendar Management</h2>
@@ -578,7 +1027,7 @@ export function AdminDashboard({
 
                 {selectedDate ? (
                   <div className="space-y-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="admin-event-name">Event name</Label>
                       <Input
                         id="admin-event-name"
@@ -590,87 +1039,175 @@ export function AdminDashboard({
                       />
                     </div>
 
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="admin-event-description">Description</Label>
                       <Textarea
                         id="admin-event-description"
                         value={newEvent.description}
                         onChange={(event) =>
-                          setNewEvent({
-                            ...newEvent,
-                            description: event.target.value,
-                          })
+                          setNewEvent({ ...newEvent, description: event.target.value })
                         }
                         placeholder="Add event details"
                         rows={4}
                       />
                     </div>
 
+                    <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                      <label className="flex items-center gap-3 text-sm font-medium text-gray-900">
+                        <input
+                          id="admin-event-multi-day"
+                          type="checkbox"
+                          checked={newEvent.isMultiDay}
+                          onChange={(event) => handleToggleMultiDay(event.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                        />
+                        Multi-day event
+                      </label>
+
+                      {newEvent.isMultiDay ? (
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                          <div className="space-y-2">
+                            <Label>Repeat every:</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {REPEAT_DAY_OPTIONS.map((dayOption) => (
+                                <label
+                                  key={dayOption.label}
+                                  className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-2 text-sm text-gray-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={newEvent.repeatDays.includes(dayOption.value)}
+                                    onChange={(event) =>
+                                      handleRepeatDayChange(dayOption.value, event.target.checked)
+                                    }
+                                    className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                                  />
+                                  <span>{dayOption.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              The selected calendar date is always included as the start date.
+                            </p>
+                            {!multiDayHasRepeatDays ? (
+                              <p className="text-sm text-red-600">
+                                Select at least one weekday to repeat this event.
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="admin-event-until-date">Until:</Label>
+                            <Input
+                              id="admin-event-until-date"
+                              type="date"
+                              value={newEvent.untilDate}
+                              min={minimumUntilDate}
+                              onChange={(event) =>
+                                setNewEvent({ ...newEvent, untilDate: event.target.value })
+                              }
+                            />
+                            {!multiDayUntilIsValid ? (
+                              <p className="text-sm text-red-600">
+                                Select a future date after the start date.
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <Label htmlFor="admin-event-time">Time</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-event-start-time">Start time</Label>
                         <Input
-                          id="admin-event-time"
-                          value={newEvent.time}
-                          onChange={(event) =>
-                            setNewEvent({ ...newEvent, time: event.target.value })
-                          }
-                          placeholder="e.g. 6:00 PM - 8:00 PM"
+                          id="admin-event-start-time"
+                          value={newEvent.startTime}
+                          onChange={(event) => handleStartTimeChange(event.target.value)}
+                          onBlur={(event) => handleStartTimeChange(formatTimeLabel(event.target.value))}
+                          list="admin-event-time-options"
+                          placeholder="e.g. 6:00 PM"
                         />
                       </div>
 
-                      <div>
-                        <Label htmlFor="admin-event-capacity">Capacity</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-event-end-time">End time</Label>
                         <Input
-                          id="admin-event-capacity"
-                          type="number"
-                          min="1"
-                          value={newEvent.capacity}
+                          id="admin-event-end-time"
+                          value={newEvent.endTime}
                           onChange={(event) =>
-                            setNewEvent({
-                              ...newEvent,
-                              capacity: event.target.value,
-                            })
+                            setNewEvent({ ...newEvent, endTime: event.target.value })
                           }
-                          disabled={newEvent.unlimited}
-                          placeholder={newEvent.unlimited ? "Unlimited" : "Enter capacity"}
+                          onBlur={(event) =>
+                            setNewEvent({ ...newEvent, endTime: formatTimeLabel(event.target.value) })
+                          }
+                          list="admin-event-time-options"
+                          placeholder="e.g. 7:30 PM"
+                          disabled={!newEvent.startTime.trim()}
                         />
+                        {!eventTimesAreInOrder ? (
+                          <p className="text-sm text-red-600">
+                            End time cannot be earlier than the start time.
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <datalist id="admin-event-time-options">
+                        {TIME_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.label} />
+                        ))}
+                      </datalist>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                          <div className="w-half md:max-w-xs space-y-2">
+                            <Label htmlFor="admin-event-capacity">Capacity</Label>
+                            <Input
+                              id="admin-event-capacity"
+                              type="number"
+                              min="1"
+                              value={newEvent.capacity}
+                              onChange={(event) =>
+                                setNewEvent({ ...newEvent, capacity: event.target.value })
+                              }
+                              disabled={newEvent.unlimited}
+                              placeholder={newEvent.unlimited ? "Unlimited" : "Enter capacity"}
+                            />
+                          </div>
+
+                          <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700 md:mb-0.5">
+                            <input
+                              type="checkbox"
+                              checked={newEvent.unlimited}
+                              onChange={(event) =>
+                                setNewEvent({
+                                  ...newEvent,
+                                  unlimited: event.target.checked,
+                                  capacity: event.target.checked ? "" : newEvent.capacity,
+                                })
+                              }
+                              className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
+                            />
+                            Unlimited
+                          </label>
+                        </div>
                       </div>
                     </div>
 
-                    <label className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={newEvent.unlimited}
-                        onChange={(event) =>
-                          setNewEvent({
-                            ...newEvent,
-                            unlimited: event.target.checked,
-                            capacity: event.target.checked ? "" : newEvent.capacity,
-                          })
-                        }
-                        className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
-                      />
-                      Unlimited capacity
-                    </label>
-
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="admin-event-location">Location</Label>
                         <Input
                           id="admin-event-location"
                           value={newEvent.location}
                           onChange={(event) =>
-                            setNewEvent({
-                              ...newEvent,
-                              location: event.target.value,
-                            })
+                            setNewEvent({ ...newEvent, location: event.target.value })
                           }
                           placeholder="In-person location"
                         />
                       </div>
 
-                      <div>
+                      <div className="space-y-2">
                         <Label htmlFor="admin-event-link">Link</Label>
                         <Input
                           id="admin-event-link"
@@ -686,7 +1223,8 @@ export function AdminDashboard({
                     <button
                       type="button"
                       onClick={handleCreateEvent}
-                      className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800"
+                      disabled={!canCreateEvent}
+                      className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
                     >
                       Add Event
                     </button>
@@ -718,9 +1256,24 @@ export function AdminDashboard({
                         className="rounded-lg border border-gray-200 bg-gray-50 p-4"
                       >
                         <div className="mb-2 flex items-start justify-between gap-4">
-                          <h4 className="text-lg font-semibold text-gray-900">
-                            {event.name}
-                          </h4>
+                          <div className="space-y-2">
+                            <h4 className="text-lg font-semibold text-gray-900">
+                              {event.name}
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openConfirmationDialog(
+                                  "cancelEvent",
+                                  event.name,
+                                  () => handleCancelEvent(event.id)
+                                )
+                              }
+                              className="inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                            >
+                              Cancel Event
+                            </button>
+                          </div>
                           <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-semibold text-pink-700">
                             {event.capacity}
                           </span>
@@ -763,6 +1316,185 @@ export function AdminDashboard({
                 )}
               </Card>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl text-gray-900 mb-6">Mentorship Management</h2>
+          <p className="mb-8 text-gray-600">
+            Manage mentor records here.
+          </p>
+
+          <div className="grid gap-8 lg:grid-cols-2">
+            <Card className="p-6">
+              <h3 className="text-2xl text-gray-900 mb-4">Find and Remove Mentors</h3>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                <label className="sr-only" htmlFor="mentor-search">
+                  Search for a mentor by name
+                </label>
+                <input
+                  id="mentor-search"
+                  type="text"
+                  value={mentorSearchQuery}
+                  onChange={(event) => setMentorSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleMentorSearch();
+                    }
+                  }}
+                  placeholder="Search by mentor name"
+                  className="w-full rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 focus:border-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-200"
+                />
+                <button
+                  type="button"
+                  onClick={handleMentorSearch}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800"
+                >
+                  <Search className="h-4 w-4" />
+                  Search
+                </button>
+              </div>
+
+              {selectedMentors.length > 0 ? (
+                <div className="mt-6 space-y-4">
+                  {selectedMentors.map((mentor) => (
+                    <div
+                      key={mentor.id}
+                      className="rounded-lg border border-gray-200 bg-gray-50 p-5"
+                    >
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <p className="text-lg font-semibold text-gray-900">
+                            {mentor.firstName} {mentor.lastName}
+                          </p>
+                          <p>{mentor.email}</p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`Remove mentor ${mentor.firstName} ${mentor.lastName}`}
+                          onClick={() =>
+                            openConfirmationDialog(
+                              "delete",
+                              `${mentor.firstName} ${mentor.lastName}`,
+                              () => handleRemoveMentor(mentor.id)
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                        >
+                          <UserX className="h-4 w-4" />
+                          Remove Mentor
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : mentorSearchAttempted ? (
+                <p className="mt-4 text-sm text-gray-500">
+                  No mentor matched that search.
+                </p>
+              ) : (
+                <p className="mt-4 text-sm text-gray-500">
+                  Search by mentor name to review or remove an existing mentor.
+                </p>
+              )}
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-2xl text-gray-900 mb-4">Add a Mentor</h3>
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="mentor-first-name">First Name</Label>
+                    <Input
+                      id="mentor-first-name"
+                      value={newMentor.firstName}
+                      onChange={(event) =>
+                        setNewMentor({ ...newMentor, firstName: event.target.value })
+                      }
+                      placeholder="Enter first name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mentor-last-name">Last Name</Label>
+                    <Input
+                      id="mentor-last-name"
+                      value={newMentor.lastName}
+                      onChange={(event) =>
+                        setNewMentor({ ...newMentor, lastName: event.target.value })
+                      }
+                      placeholder="Enter last name"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentor-email">Email</Label>
+                  <Input
+                    id="mentor-email"
+                    type="email"
+                    value={newMentor.email}
+                    onChange={(event) =>
+                      setNewMentor({ ...newMentor, email: event.target.value })
+                    }
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentor-bio">Bio</Label>
+                  <Textarea
+                    id="mentor-bio"
+                    value={newMentor.bio}
+                    onChange={(event) =>
+                      setNewMentor({ ...newMentor, bio: event.target.value })
+                    }
+                    placeholder="Write a short mentor bio"
+                    rows={6}
+                  />
+                  <p
+                    className={`mt-2 text-sm ${
+                      mentorBioTooLong ? "text-red-600" : "text-gray-500"
+                    }`}
+                  >
+                    {mentorBioWordCount}/200 words
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentor-photo">Upload Photo (Optional)</Label>
+                  <Input
+                    id="mentor-photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      setNewMentor({
+                        ...newMentor,
+                        photoName: event.target.files?.[0]?.name ?? "",
+                        photoFile: event.target.files?.[0] ?? null,
+                      })
+                    }
+                    className="cursor-pointer"
+                  />
+                  <p className="mt-2 text-sm text-gray-500">
+                    {newMentor.photoName
+                      ? `Selected file: ${newMentor.photoName}`
+                      : "No photo selected."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAddMentorConfirmation}
+                  disabled={!canAddMentor}
+                  className="inline-flex w-full items-center justify-center rounded-md bg-pink-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-pink-800 disabled:cursor-not-allowed disabled:bg-pink-300"
+                >
+                  Add Mentor
+                </button>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
