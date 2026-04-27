@@ -51,7 +51,7 @@ export default function ResetPassword() {
           <p className="text-gray-600 pb-4">
             Your password has been successfully reset. We've sent a confirmation email. You can now log in with your new password.
           </p>
-          <Button className="w-full" onClick={() => window.location.href = "/"}>
+          <Button className="w-full" onClick={() => window.location.href = "/DIVAS-in-Tech/"}>
             Go to Login
           </Button>
         </div>
