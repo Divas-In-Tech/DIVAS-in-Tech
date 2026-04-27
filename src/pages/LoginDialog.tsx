@@ -199,7 +199,6 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                     <Label htmlFor="affiliation">Affiliation</Label>
                     <Input 
                       id="affiliation"
-                      type="email"
                       value={form.affiliation}
                       onChange={update("affiliation")}
                       placeholder="Affiliation"
