@@ -1,6 +1,7 @@
 import { Card } from "../components/ui/card";
 import {Button} from "../components/ui/button";
 import {Crown, LucideIcon } from "lucide-react";
+import { useState } from "react";
 
 {/*Only make this page appear when logged in for all types of users and be able to contact them through email*/}
 interface Mentor {
@@ -47,6 +48,8 @@ export function MentorPage() {
             email: "mentor4@example.com"
         }
     ];
+    const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
+    const [message, setMessage] = useState("");
 
     const getColorClasses = (color: "purple" | "violet") => {
         if (color === "violet") {
@@ -109,15 +112,43 @@ export function MentorPage() {
                                     </p>
                                     <Button
                                         className={`w-full ${colors.btnBg} text-white`}
-                                        onClick={() => window.location.href = `mailto:${mentor.email}`}
+                                        onClick={() => setSelectedMentor(mentor)}
                                         >
                                         <Icon className="w-4 h-4 mr-2" />
                                         Contact Mentor
                                     </Button>
-                                    
                                 </Card>
                             );
                         })}
+                        {/*Text bubble*/}
+                        {selectedMentor && (
+                            <div className="fixed inset-0 flex items-center justify-center z-60 bg-black/40">
+                            <div className = "w-full max-w-lg bg-white rounded-2xl shadow-xl p-8">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-semibold text-sm">
+                                        Contact {selectedMentor.name}
+                                    </h3>
+                                    <button
+                                        onClick={() => setSelectedMentor(null)}
+                                        className="text-lg font-bold text-gray-600 hover:text-black">
+                                        ✕
+                                    </button>
+                                </div>
+                                    <textarea
+                                        className="w-full border rounded-lg p-3 text-sm mb-4 h-40"
+                                        placeholder={`Message ${selectedMentor.name}...`}
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                    />
+                                    <div className="flex gap-2">
+                                    <Button type="submit" className="w-full bg-violet-500 hover: bg-purple-700 text-white py-2 rounded-lg text-sm">
+                                        Send 
+                                    </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                     </div>
                 </div>
             </section>
