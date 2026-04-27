@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "login"]
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-      - run: npm install
+      - run: npm ci
       - name: Build
         run: npm run build
         env:
