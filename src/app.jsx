@@ -18,7 +18,7 @@ import ResetPassword from "./pages/ResetPassword";
 export default function App() {
   const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(defaultIsAdmin); 
+  const [isAdmin, setIsAdmin] = useState(false); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
 
@@ -40,6 +40,29 @@ export default function App() {
       }
     });
   }, []);
+
+useEffect(() => {
+    async function checkAdminStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profileData, error } = await supabase
+          .from("users")
+          .select("role")
+          .eq("email", user.email)
+          .single();
+
+        if (profileData && profileData.role === "admin") {
+          setIsAdmin(true);
+        }
+        
+        if (error) console.error("Error fetching profile:", error.message);
+      }
+    }
+    
+    checkAdminStatus();
+  }, []);
+
 
   const handleLogin = (name) => {
     setIsLoggedIn(true);

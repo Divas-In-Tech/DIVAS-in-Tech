@@ -84,7 +84,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLog
             >
               Calendar
             </button>
-            {isAdmin ? (
+            {isLoggedIn && isAdmin ? (
               <button
               onClick={() => onNavigate('admin')}
               className={`transition-colors ${
