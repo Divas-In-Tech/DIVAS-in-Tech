@@ -8,8 +8,9 @@ export const registerUser = async (email, password, firstName, lastName, eventAt
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        // This is stashed in order to add to the users table in the database
+        // This is stashed in order to add to the users table in the database 
         options: {
+            emailRedirectTo: 'https://divas-in-tech.github.io/DIVAS-in-Tech/',
             data: {
                 first_name: firstName,
                 last_name: lastName,

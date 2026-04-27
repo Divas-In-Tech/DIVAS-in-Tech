@@ -18,15 +18,20 @@ import ResetPassword from "./pages/ResetPassword";
 export default function App() {
   const defaultIsAdmin = import.meta.env.DEV; //NOTE: Admin access is enabled by default in development mode for testing purposes
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(defaultIsAdmin); 
+  const [isAdmin, setIsAdmin] = useState(false); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   // without this, the reset email can't redirect to the reset page
   const [currentPage, setCurrentPage] = useState(() => {
-    if (window.location.pathname === '/reset-password') {
+    if (window.location.hash.includes("type=recovery")) {
       return "reset-password";
     }
+    if (window.location.pathname.includes('/reset-password')) {
+      return "reset-password";
+    }
+
     return "home";
   });
 
@@ -39,7 +44,62 @@ export default function App() {
         setUserName(`${firstName} ${lastName}`.trim() || "User");
       }
     });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setCurrentPage("reset-password");
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
+
+useEffect(() => {
+    async function checkAdminStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profileData, error } = await supabase
+          .from("users")
+          .select("role")
+          .eq("email", user.email)
+          .single();
+
+        if (profileData && profileData.role === "admin") {
+          setIsAdmin(true);
+        }
+        
+        if (error) console.error("Error fetching profile:", error.message);
+      }
+    }
+
+
+    async function checkApprovalStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profileData, error } = await supabase
+          .from("users")
+          .select("approved")
+          .eq("email", user.email)
+          .single();
+
+        if (profileData && profileData.approved === true) {
+          setIsApproved(true);
+        }
+        
+        if (error) console.error("Error fetching profile:", error.message);
+      }
+    }
+
+    checkApprovalStatus()
+    checkAdminStatus();
+  }, []);
+
 
   const handleLogin = (name) => {
     setIsLoggedIn(true);
@@ -77,12 +137,13 @@ export default function App() {
         onLoginClick={() => setShowLogin(true)}
         onLogout={handleLogout}
         userName={userName}
+        isApproved={isApproved}
       />
 
       {currentPage === "home" && <HomePage />}
       {currentPage === "mission" && <MissionPage />}
       {currentPage === "contact" && <ContactPage />}
-      {currentPage === "mentors" && <MentorPage />}
+      {currentPage === "mentors" && isApproved && <MentorPage />}
       {currentPage === "board" && <BoardPage />}
       {currentPage === "partners" && <PartnersPage />}
       {currentPage === "calendar" && (
@@ -92,7 +153,15 @@ export default function App() {
         />
       )}
       {currentPage === "admin" && isAdmin && <AdminDashboard />}
-      {currentPage === "reset-password" && <ResetPassword />}
+      {currentPage === "reset-password" && (
+        <ResetPassword 
+          onGoToLogin={() => {
+            window.history.replaceState(null, '', window.location.pathname);
+            setCurrentPage("home");
+            setShowLogin(true);
+          }} 
+        />
+      )}
 
       <LoginDialog
         open={showLogin}

@@ -9,7 +9,7 @@ import { supabase } from "../supabaseConnection";
 import { updatePassword } from "../forgotPassword";
 
 
-export default function ResetPassword() {
+export default function ResetPassword({ onGoToLogin }: { onGoToLogin: () => void }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -51,7 +51,7 @@ export default function ResetPassword() {
           <p className="text-gray-600 pb-4">
             Your password has been successfully reset. We've sent a confirmation email. You can now log in with your new password.
           </p>
-          <Button className="w-full" onClick={() => window.location.href = "/"}>
+          <Button className="w-full" onClick={onGoToLogin}>
             Go to Login
           </Button>
         </div>
