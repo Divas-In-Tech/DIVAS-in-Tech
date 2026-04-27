@@ -16,8 +16,7 @@ interface Event {
   time: string;
   location: string;
   description: string;
-  attendees: number;
-  type: "volunteer" | "fundraiser" | "meeting" | "community";
+  type: "volunteer" | "fundraiser" | "workshop" | "community";
 }
 
 interface CalendarPageProps {
@@ -28,61 +27,19 @@ interface CalendarPageProps {
 const mockEvents: Event[] = [
   {
     id: "1",
-    title: "Community Food Drive",
-    date: new Date(2025, 9, 25),
-    time: "9:00 AM - 2:00 PM",
-    location: "Community Center, Main St",
-    description: "Join us for our monthly food drive to support local families in need. We'll be collecting non-perishable items and distributing them to partner organizations.",
-    attendees: 24,
-    type: "volunteer"
+    title: "Intro to Python",
+    date: new Date(2026, 5, 2),
+    time: "10:00 AM - 6:00 PM",
+    location: "1025 N. Broadway, Milwaukee, WI",
+    description: "This program teaches basic programming concepts in the Python coding language. Participants will engage in hands-on coding activities and projects. No coding experience required.",
+    type: "workshop"
   },
-  {
-    id: "2",
-    title: "Youth Mentorship Program",
-    date: new Date(2025, 9, 27),
-    time: "3:00 PM - 5:00 PM",
-    location: "Divas in Tech Office",
-    description: "Weekly mentorship session with local youth. Volunteers needed to provide guidance and support.",
-    attendees: 12,
-    type: "volunteer"
-  },
-  {
-    id: "3",
-    title: "Fundraising Gala",
-    date: new Date(2025, 9, 30),
-    time: "6:00 PM - 10:00 PM",
-    location: "Grand Hotel Ballroom",
-    description: "Annual fundraising event featuring dinner, entertainment, and silent auction. All proceeds support our programs.",
-    attendees: 150,
-    type: "fundraiser"
-  },
-  {
-    id: "4",
-    title: "Board Meeting",
-    date: new Date(2025, 10, 1),
-    time: "7:00 PM - 9:00 PM",
-    location: "Virtual (Zoom)",
-    description: "Monthly board meeting to discuss ongoing initiatives and future planning.",
-    attendees: 8,
-    type: "meeting"
-  },
-  {
-    id: "5",
-    title: "Park Cleanup Day",
-    date: new Date(2025, 10, 5),
-    time: "8:00 AM - 12:00 PM",
-    location: "Riverside Park",
-    description: "Help us beautify our community! Bring gloves and enthusiasm. Supplies provided.",
-    attendees: 35,
-    type: "community"
-  }
 ];
 
 export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [events, setEvents] = useState<Event[]>(mockEvents);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showAddEvent, setShowAddEvent] = useState(false);
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
   const [newEvent, setNewEvent] = useState({
     title: "",
@@ -110,27 +67,8 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
   const typeColors: Record<Event["type"], string> = {
     volunteer: "bg-blue-100 text-blue-700 border-blue-200",
     fundraiser: "bg-purple-100 text-purple-700 border-purple-200",
-    meeting: "bg-gray-100 text-gray-700 border-gray-200",
+    workshop: "bg-gray-100 text-gray-700 border-gray-200",
     community: "bg-green-100 text-green-700 border-green-200"
-  };
-
-  const handleAddEvent = () => {
-    if (!date || !newEvent.title || !newEvent.time || !newEvent.location) return;
-
-    const event: Event = {
-      id: Date.now().toString(),
-      title: newEvent.title,
-      date: new Date(date),
-      time: newEvent.time,
-      location: newEvent.location,
-      description: newEvent.description,
-      attendees: 0,
-      type: newEvent.type
-    };
-
-    setEvents([...events, event]);
-    setNewEvent({ title: "", time: "", location: "", description: "", type: "volunteer" });
-    setShowAddEvent(false);
   };
 
   const handleRegisterForEvent = (eventId: string) => {
@@ -145,20 +83,12 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
       newSet.delete(eventId);
       setRegisteredEvents(newSet);
       
-      // Decrease attendee count
-      setEvents(events.map(e => 
-        e.id === eventId ? { ...e, attendees: e.attendees - 1 } : e
-      ));
     } else {
       // Register
       const newSet = new Set(registeredEvents);
       newSet.add(eventId);
       setRegisteredEvents(newSet);
       
-      // Increase attendee count
-      setEvents(events.map(e => 
-        e.id === eventId ? { ...e, attendees: e.attendees + 1 } : e
-      ));
     }
   };
 
@@ -192,15 +122,6 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
                   }
                 }}
               />
-              {isLoggedIn && (
-                <Button 
-                  onClick={() => setShowAddEvent(true)} 
-                  className="w-full mt-4"
-                >
-                  <CalendarIcon className="w-4 h-4 mr-2" />
-                  Add Event
-                </Button>
-              )}
             </Card>
           </div>
 
@@ -233,10 +154,6 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4" />
                           <span>{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          <span>{event.attendees} attending</span>
                         </div>
                       </div>
                     </Card>
@@ -308,10 +225,6 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
                   <MapPin className="w-5 h-5" />
                   <span>{selectedEvent.location}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Users className="w-5 h-5" />
-                  <span>{selectedEvent.attendees} people attending</span>
-                </div>
               </div>
               <div>
                 <h4 className="mb-2">Description</h4>
@@ -328,74 +241,6 @@ export function CalendarPage({ isLoggedIn, onLoginPrompt }: CalendarPageProps) {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Add Event Dialog */}
-      <Dialog open={showAddEvent} onOpenChange={setShowAddEvent}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Event</DialogTitle>
-            <DialogDescription>
-              Create a new event for {date?.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Event Title</Label>
-              <Input
-                id="title"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                placeholder="Enter event title"
-              />
-            </div>
-            <div>
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                value={newEvent.time}
-                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                placeholder="e.g., 9:00 AM - 2:00 PM"
-              />
-            </div>
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={newEvent.location}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                placeholder="Enter location"
-              />
-            </div>
-            <div>
-              <Label htmlFor="type">Event Type</Label>
-              <select
-                id="type"
-                value={newEvent.type}
-                onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as Event["type"] })}
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-              >
-                <option value="volunteer">Volunteer</option>
-                <option value="fundraiser">Fundraiser</option>
-                <option value="meeting">Meeting</option>
-                <option value="community">Community</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={newEvent.description}
-                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                placeholder="Enter event description"
-                rows={3}
-              />
-            </div>
-            <Button onClick={handleAddEvent} className="w-full">
-              Add Event
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+      </div>
   );
 }
