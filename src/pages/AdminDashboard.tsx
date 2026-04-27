@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../supabaseConnection";
 import { Calendar } from "../components/ui/calendar";
 import { Card } from "../components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -8,11 +9,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { Calendar as CalendarIcon, Crown, Link as LinkIcon, MapPin, Search, TriangleAlert, UserCheck, UserX, Users } from "lucide-react";
 
-/* TODO: Most of this right below here is prop data used to test. Doesn't
-  guarantee future data appearance-- must be changed to match
-  actual database structure */
-
 export type PendingUser = {
+  id: string;
   firstName: string;
   lastName: string;
   accountType: string;
@@ -21,6 +19,7 @@ export type PendingUser = {
 };
 
 export type SearchableUser = {
+  id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -36,12 +35,6 @@ export type Mentor = {
   email: string;
   bio: string;
   photoName?: string;
-};
-
-type AdminDashboardProps = {
-  pendingUsers?: PendingUser[];
-  searchableUsers?: SearchableUser[];
-  mentors?: Mentor[];
 };
 
 type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor" | "cancelEvent";
@@ -114,9 +107,7 @@ const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
   const hours12 = hours24 % 12 || 12;
 
   return {
-    value: `${hours24.toString().padStart(2, "0")}:${minutes
-      .toString()
-      .padStart(2, "0")}`,
+    value: `${hours24.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`,
     label: `${hours12}:${minutes.toString().padStart(2, "0")} ${meridiem}`,
     minutes: totalMinutes,
   };
@@ -138,11 +129,7 @@ const parseTimeInput = (value: string) => {
     return null;
   }
 
-  return {
-    hours,
-    minutes,
-    period,
-  };
+  return { hours, minutes, period };
 };
 
 const formatTimeLabel = (value: string) => {
@@ -152,9 +139,7 @@ const formatTimeLabel = (value: string) => {
     return value.trim();
   }
 
-  return `${parsedTime.hours}:${parsedTime.minutes
-    .toString()
-    .padStart(2, "0")} ${parsedTime.period}`;
+  return `${parsedTime.hours}:${parsedTime.minutes.toString().padStart(2, "0")} ${parsedTime.period}`;
 };
 
 const getTimeInMinutes = (value: string) => {
@@ -165,8 +150,7 @@ const getTimeInMinutes = (value: string) => {
   }
 
   const normalizedHour = parsedTime.hours % 12;
-  const hours24 =
-    parsedTime.period === "PM" ? normalizedHour + 12 : normalizedHour;
+  const hours24 = parsedTime.period === "PM" ? normalizedHour + 12 : normalizedHour;
 
   return hours24 * 60 + parsedTime.minutes;
 };
@@ -199,11 +183,7 @@ const formatDateInputValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const buildRecurringEventDates = (
-  startDate: Date,
-  endDate: Date,
-  repeatDays: number[]
-) => {
+const buildRecurringEventDates = (startDate: Date, endDate: Date, repeatDays: number[]) => {
   const dates: Date[] = [];
   const cursor = getStartOfDay(startDate);
   const finalDate = getStartOfDay(endDate);
@@ -212,163 +192,40 @@ const buildRecurringEventDates = (
     if (isSameDay(cursor, startDate) || repeatDays.includes(cursor.getDay())) {
       dates.push(new Date(cursor));
     }
-
     cursor.setDate(cursor.getDate() + 1);
   }
 
   return dates;
 };
 
-const sampleMentors: Mentor[] = [
-  {
-    id: "mentor-1",
-    firstName: "Alicia",
-    lastName: "Nguyen",
-    email: "alicia.nguyen@divasintech.org",
-    bio: "Frontend engineer passionate about helping early-career developers build confidence, portfolios, and sustainable coding habits.",
-    photoName: "alicia-nguyen-headshot.jpg",
-  },
-  {
-    id: "mentor-2",
-    firstName: "Monica",
-    lastName: "Patel",
-    email: "monica.patel@divasintech.org",
-    bio: "Product leader focused on mentorship around internships, technical interviewing, and turning ideas into well-scoped projects.",
-  },
-];
+const toTimetz = (s: string): string => {
+  const m = s.trim().toUpperCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+  if (!m) return s;
+  let h = Number(m[1]);
+  const min = m[2] ? Number(m[2]) : 0;
+  if (m[3] === "PM" && h !== 12) h += 12;
+  if (m[3] === "AM" && h === 12) h = 0;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`;
+};
 
-const sampleAdminEvents: AdminEvent[] = [
-  {
-    id: "mock-single-day-2026-04-27",
-    name: "Resume Review Lab",
-    description: "A focused resume workshop with live feedback and recruiter tips.",
-    date: new Date(2026, 3, 27),
-    startDate: new Date(2026, 3, 27),
-    endDate: new Date(2026, 3, 27),
-    startTime: "6:00 PM",
-    endTime: "7:30 PM",
-    time: "6:00 PM - 7:30 PM",
-    location: "DIVAS Community Center",
-    link: "",
-    capacity: "25",
-    unlimited: false,
-  },
-  {
-    id: "mock-multi-day-2026-04-28-0",
-    name: "Spring Coding Sprint",
-    description: "A multi-day collaborative coding event with daily progress check-ins.",
-    date: new Date(2026, 3, 28),
-    startDate: new Date(2026, 3, 28),
-    endDate: new Date(2026, 4, 1),
-    startTime: "5:30 PM",
-    endTime: "7:00 PM",
-    time: "5:30 PM - 7:00 PM",
-    location: "Innovation Lab",
-    link: "",
-    capacity: "Unlimited",
-    unlimited: true,
-  },
-  {
-    id: "mock-multi-day-2026-04-28-1",
-    name: "Spring Coding Sprint",
-    description: "A multi-day collaborative coding event with daily progress check-ins.",
-    date: new Date(2026, 3, 29),
-    startDate: new Date(2026, 3, 28),
-    endDate: new Date(2026, 4, 1),
-    startTime: "5:30 PM",
-    endTime: "7:00 PM",
-    time: "5:30 PM - 7:00 PM",
-    location: "Innovation Lab",
-    link: "",
-    capacity: "Unlimited",
-    unlimited: true,
-  },
-  {
-    id: "mock-multi-day-2026-04-28-2",
-    name: "Spring Coding Sprint",
-    description: "A multi-day collaborative coding event with daily progress check-ins.",
-    date: new Date(2026, 3, 30),
-    startDate: new Date(2026, 3, 28),
-    endDate: new Date(2026, 4, 1),
-    startTime: "5:30 PM",
-    endTime: "7:00 PM",
-    time: "5:30 PM - 7:00 PM",
-    location: "Innovation Lab",
-    link: "",
-    capacity: "Unlimited",
-    unlimited: true,
-  },
-  {
-    id: "mock-multi-day-2026-04-28-3",
-    name: "Spring Coding Sprint",
-    description: "A multi-day collaborative coding event with daily progress check-ins.",
-    date: new Date(2026, 4, 1),
-    startDate: new Date(2026, 3, 28),
-    endDate: new Date(2026, 4, 1),
-    startTime: "5:30 PM",
-    endTime: "7:00 PM",
-    time: "5:30 PM - 7:00 PM",
-    location: "Innovation Lab",
-    link: "",
-    capacity: "Unlimited",
-    unlimited: true,
-  },
-];
+const fmtTimetz = (t: string | null): string => {
+  if (!t) return "";
+  const [hh, mm] = t.split(":");
+  const h = Number(hh);
+  return `${h % 12 || 12}:${mm} ${h >= 12 ? "PM" : "AM"}`;
+};
 
-export function AdminDashboard({
-  pendingUsers = [{
-    firstName: "Jane",
-    lastName: "Doe",
-    accountType: "Student",
-    eventAttended: "Workshop 1",
-    createdAt: "01/06/2024"
-  },
-  {
-    firstName: "John",
-    lastName: "Smith",
-    accountType: "Student",
-    eventAttended: "Workshop 2",
-    createdAt: "04/16/2026"
-  }],
-  searchableUsers = [
-    {
-      firstName: "Janie",
-      lastName: "Doe",
-      email: "janie.doe@divasintech.org",
-      accountType: "Student",
-      status: "Active",
-      joinedAt: "01/06/2024",
-    },
-    {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith@divasintech.org",
-      accountType: "Student",
-      status: "Pending",
-      joinedAt: "04/16/2026",
-    },
-    {
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith2@divasintech.org",
-      accountType: "Student",
-      status: "Pending",
-      joinedAt: "04/01/2026",
-    },
-  ],
-  mentors: initialMentors = sampleMentors,
-}: AdminDashboardProps) {
-  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000; // 14 days in milliseconds
+export function AdminDashboard() {
+  const warningThresholdMs = 14 * 24 * 60 * 60 * 1000;
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 15;
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [pendingUsers]);
 
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [searchableUsers, setSearchableUsers] = useState<SearchableUser[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState<typeof searchableUsers>([]);
+  const [selectedUsers, setSelectedUsers] = useState<SearchableUser[]>([]);
   const [searchAttempted, setSearchAttempted] = useState(false);
-  const [mentors, setMentors] = useState<Mentor[]>(initialMentors);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
   const [mentorSearchQuery, setMentorSearchQuery] = useState("");
   const [selectedMentors, setSelectedMentors] = useState<Mentor[]>([]);
   const [mentorSearchAttempted, setMentorSearchAttempted] = useState(false);
@@ -378,25 +235,92 @@ export function AdminDashboard({
     email: "",
     bio: "",
     photoName: "",
+    photoFile: null as File | null,
   });
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>(null);
   const [confirmationCode, setConfirmationCode] = useState("");
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>(sampleAdminEvents);
+  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>([]);
   const [newEvent, setNewEvent] = useState<NewEventState>(createEmptyEvent);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pendingUsers]);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("approved", false)
+        .order("pending_since", { ascending: true });
+
+      if (error) return;
+
+      setPendingUsers(
+        (data ?? []).map((r: any) => ({
+          id: r.email,
+          firstName: r.first_name,
+          lastName: r.last_name,
+          accountType: r.role ?? "",
+          eventAttended: r.event_attended ?? "",
+          createdAt: r.pending_since ?? "",
+        }))
+      );
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("calendar")
+        .select("*")
+        .order("start_date", { ascending: true });
+
+      if (error) return;
+
+      const mapped: AdminEvent[] = [];
+      for (const r of data ?? []) {
+        const start = new Date(r.start_date);
+        const end = new Date(r.end_date);
+        const startTime = fmtTimetz(r.time_start);
+        const endTime = fmtTimetz(r.time_end);
+        const time = startTime && endTime ? `${startTime} - ${endTime}` : startTime;
+        const cursor = getStartOfDay(start);
+        const finalDate = getStartOfDay(end);
+        while (cursor.getTime() <= finalDate.getTime()) {
+          mapped.push({
+            id: `${r.id}-${cursor.getTime()}`,
+            name: r.name,
+            description: r.description ?? "",
+            date: new Date(cursor),
+            startDate: start,
+            endDate: end,
+            startTime,
+            endTime,
+            time,
+            location: r.location ?? "",
+            link: r.link ?? "",
+            capacity: r.num_of_attendees !== null ? String(r.num_of_attendees) : "Unlimited",
+            unlimited: r.num_of_attendees === null,
+          });
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+      setAdminEvents(mapped);
+    })();
+  }, []);
+
   const totalPages = Math.ceil(pendingUsers.length / pageSize);
-  //TODO: Needs to sort by date eventually
   const paginatedUsers = pendingUsers.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-
     setSearchAttempted(true);
 
     if (!normalizedQuery) {
@@ -404,17 +328,31 @@ export function AdminDashboard({
       return;
     }
 
-    const matchedUsers = searchableUsers.filter((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-      return fullName.includes(normalizedQuery) || user.email.toLowerCase().includes(normalizedQuery);
+    const { data: d1 } = await supabase.from("users").select("*").ilike("first_name", `%${normalizedQuery}%`);
+    const { data: d2 } = await supabase.from("users").select("*").ilike("last_name", `%${normalizedQuery}%`);
+
+    const seen = new Set<string>();
+    const merged = [...(d1 ?? []), ...(d2 ?? [])].filter((u: any) => {
+      if (seen.has(u.email)) return false;
+      seen.add(u.email);
+      return true;
     });
 
-    setSelectedUsers(matchedUsers);
+    setSelectedUsers(
+      merged.map((r: any) => ({
+        id: r.email,
+        firstName: r.first_name,
+        lastName: r.last_name,
+        email: r.email,
+        accountType: r.role ?? "",
+        status: r.approved ? "Active" : "Pending",
+        joinedAt: r.pending_since ?? "",
+      }))
+    );
   };
 
-  const handleMentorSearch = () => {
+  const handleMentorSearch = async () => {
     const normalizedQuery = mentorSearchQuery.trim().toLowerCase();
-
     setMentorSearchAttempted(true);
 
     if (!normalizedQuery) {
@@ -422,42 +360,47 @@ export function AdminDashboard({
       return;
     }
 
-    const matchedMentors = mentors.filter((mentor) => {
-      const fullName = `${mentor.firstName} ${mentor.lastName}`.toLowerCase();
-      return (
-        fullName.includes(normalizedQuery) ||
-        mentor.email.toLowerCase().includes(normalizedQuery)
-      );
+    const { data: d1 } = await supabase.from("mentors").select("*").ilike("first_name", `%${normalizedQuery}%`);
+    const { data: d2 } = await supabase.from("mentors").select("*").ilike("last_name", `%${normalizedQuery}%`);
+
+    const seen = new Set<string>();
+    const merged = [...(d1 ?? []), ...(d2 ?? [])].filter((m: any) => {
+      if (seen.has(m.mentor_id)) return false;
+      seen.add(m.mentor_id);
+      return true;
     });
 
-    setSelectedMentors(matchedMentors);
+    setSelectedMentors(
+      merged.map((r: any) => ({
+        id: r.mentor_id,
+        firstName: r.first_name,
+        lastName: r.last_name,
+        email: r.email,
+        bio: r.bio,
+        photoName: r.photo ?? undefined,
+      }))
+    );
   };
 
   const getEventsForDate = (date: Date | undefined) => {
     if (!date) return [];
-
-    return adminEvents.filter(
-      (event) => isSameDay(event.date, date)
-    );
+    return adminEvents.filter((event) => isSameDay(event.date, date));
   };
 
   const hasEventsOnDate = (date: Date) => {
-    return adminEvents.some(
-      (event) => isSameDay(event.date, date)
-    );
+    return adminEvents.some((event) => isSameDay(event.date, date));
   };
 
   const eventsForSelectedDate = getEventsForDate(selectedDate);
-  const minimumUntilDate =
-    selectedDate
-      ? formatDateInputValue(
-          new Date(
-            selectedDate.getFullYear(),
-            selectedDate.getMonth(),
-            selectedDate.getDate() + 1
-          )
+  const minimumUntilDate = selectedDate
+    ? formatDateInputValue(
+        new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate() + 1
         )
-      : undefined;
+      )
+    : undefined;
 
   const closeConfirmationDialog = () => {
     setConfirmationState(null);
@@ -473,8 +416,7 @@ export function AdminDashboard({
     setConfirmationCode("");
   };
 
-  const requiresConfirmationCode =
-    confirmationState?.action === "promote" || confirmationState?.action === "delete";
+  const requiresConfirmationCode = false;
 
   const actionLabels: Record<ConfirmationAction, { title: string; confirm: string; description: string; codeLabel?: string }> = {
     accept: {
@@ -491,13 +433,21 @@ export function AdminDashboard({
       title: "Promote this user to admin?",
       confirm: "Confirm",
       description: "This will grant this account elevated admin access:",
-      codeLabel: "Confirmation code",
     },
     delete: {
       title: "Delete this account?",
       confirm: "Confirm",
       description: "This will remove this account:",
-      codeLabel: "Confirmation code",
+    },
+    addMentor: {
+      title: "Add this mentor?",
+      confirm: "Confirm",
+      description: "This will add this mentor record:",
+    },
+    cancelEvent: {
+      title: "Cancel this event?",
+      confirm: "Cancel Event",
+      description: "This will remove this scheduled event:",
     },
     addMentor: {
       title: "Add this mentor?",
@@ -520,10 +470,7 @@ export function AdminDashboard({
     closeConfirmationDialog();
   };
 
-  const mentorBioWordCount = newMentor.bio
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean).length;
+  const mentorBioWordCount = newMentor.bio.trim().split(/\s+/).filter(Boolean).length;
   const mentorBioTooLong = mentorBioWordCount > 200;
   const canAddMentor =
     newMentor.firstName.trim() &&
@@ -536,20 +483,18 @@ export function AdminDashboard({
     Boolean(selectedDate) &&
     Boolean(newEvent.name.trim()) &&
     Boolean(newEvent.description.trim()) &&
-    getTimeInMinutes(newEvent.startTime) >= 0 &&
-    getTimeInMinutes(newEvent.endTime) >= 0 &&
+    Boolean(newEvent.startTime.trim()) &&
+    Boolean(newEvent.endTime.trim()) &&
     Boolean(newEvent.location.trim() || newEvent.link.trim()) &&
     Boolean(newEvent.unlimited || newEvent.capacity.trim());
 
   const multiDayUntilDate = parseDateInput(newEvent.untilDate);
-  const multiDayHasRepeatDays =
-    !newEvent.isMultiDay || newEvent.repeatDays.length > 0;
+  const multiDayHasRepeatDays = !newEvent.isMultiDay || newEvent.repeatDays.length > 0;
   const multiDayUntilIsValid =
     !newEvent.isMultiDay ||
     (selectedDate !== undefined &&
       multiDayUntilDate !== null &&
-      getStartOfDay(multiDayUntilDate).getTime() >
-        getStartOfDay(selectedDate).getTime());
+      getStartOfDay(multiDayUntilDate).getTime() > getStartOfDay(selectedDate).getTime());
 
   const eventTimesAreInOrder =
     !newEvent.startTime ||
@@ -593,23 +538,44 @@ export function AdminDashboard({
     setNewEvent((currentEvent) => ({
       ...currentEvent,
       repeatDays: checked
-        ? [...currentEvent.repeatDays, dayValue].sort((firstDay, secondDay) => firstDay - secondDay)
-        : currentEvent.repeatDays.filter((currentDay) => currentDay !== dayValue),
+        ? [...currentEvent.repeatDays, dayValue].sort((a, b) => a - b)
+        : currentEvent.repeatDays.filter((d) => d !== dayValue),
     }));
   };
 
-  const handleAddMentor = () => {
-    if (!canAddMentor) {
-      return;
+  const handleAddMentor = async () => {
+    if (!canAddMentor) return;
+
+    let photo = "";
+    if (newMentor.photoFile) {
+      const path = `${Date.now()}-${newMentor.photoFile.name}`;
+      const { error: upErr } = await supabase.storage.from("mentor-photos").upload(path, newMentor.photoFile);
+      if (!upErr) {
+        photo = supabase.storage.from("mentor-photos").getPublicUrl(path).data.publicUrl;
+      }
     }
-    {/*The ID is just a temporary placeholder. Not sure how the photo thing works.*/}
+
+    const { data, error } = await supabase
+      .from("mentors")
+      .insert({
+        first_name: newMentor.firstName.trim(),
+        last_name: newMentor.lastName.trim(),
+        email: newMentor.email.trim(),
+        bio: newMentor.bio.trim(),
+        photo,
+      })
+      .select()
+      .single();
+
+    if (error) { console.error("Add mentor error:", error); return; }
+
     const mentorToAdd: Mentor = {
-      id: `mentor-${Date.now()}`, 
-      firstName: newMentor.firstName.trim(),
-      lastName: newMentor.lastName.trim(),
-      email: newMentor.email.trim(),
-      bio: newMentor.bio.trim(),
-      photoName: newMentor.photoName.trim() || undefined,
+      id: (data as any).mentor_id,
+      firstName: (data as any).first_name,
+      lastName: (data as any).last_name,
+      email: (data as any).email,
+      bio: (data as any).bio,
+      photoName: (data as any).photo || undefined,
     };
 
     setMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
@@ -620,25 +586,16 @@ export function AdminDashboard({
       const matchesSearch =
         fullName.includes(normalizedQuery) ||
         mentorToAdd.email.toLowerCase().includes(normalizedQuery);
-
       if (matchesSearch) {
         setSelectedMentors((currentMentors) => [mentorToAdd, ...currentMentors]);
       }
     }
 
-    setNewMentor({
-      firstName: "",
-      lastName: "",
-      email: "",
-      bio: "",
-      photoName: "",
-    });
+    setNewMentor({ firstName: "", lastName: "", email: "", bio: "", photoName: "", photoFile: null });
   };
 
   const handleOpenAddMentorConfirmation = () => {
-    if (!canAddMentor) {
-      return;
-    }
+    if (!canAddMentor) return;
 
     openConfirmationDialog(
       "addMentor",
@@ -647,25 +604,50 @@ export function AdminDashboard({
     );
   };
 
-  const handleRemoveMentor = (mentorId: string) => {
-    setMentors((currentMentors) =>
-      currentMentors.filter((mentor) => mentor.id !== mentorId)
-    );
-    setSelectedMentors((currentMentors) =>
-      currentMentors.filter((mentor) => mentor.id !== mentorId)
-    );
+  const handleRemoveMentor = async (mentorId: string) => {
+    const { error } = await supabase.from("mentors").delete().eq("mentor_id", mentorId);
+    if (error) { console.error("Remove mentor error:", error); return; }
+
+    setMentors((currentMentors) => currentMentors.filter((mentor) => mentor.id !== mentorId));
+    setSelectedMentors((currentMentors) => currentMentors.filter((mentor) => mentor.id !== mentorId));
   };
 
-  const handleCancelEvent = (eventId: string) => {
-    setAdminEvents((currentEvents) =>
-      currentEvents.filter((event) => event.id !== eventId)
-    );
+  const handleAcceptUser = async (user: PendingUser) => {
+    const { error } = await supabase
+      .from("users")
+      .update({ approved: true, pending_since: null })
+      .eq("email", user.id);
+    if (error) { console.error("Accept user error:", error); return; }
+    setPendingUsers((prev) => prev.filter((u) => u.id !== user.id));
   };
 
-  const handleCreateEvent = () => {
-    if (!canCreateEvent || !selectedDate) {
-      return;
-    }
+  const handleRejectUser = async (user: PendingUser) => {
+    const { error } = await supabase.from("users").delete().eq("email", user.id);
+    if (error) { console.error("Reject user error:", error); return; }
+    setPendingUsers((prev) => prev.filter((u) => u.id !== user.id));
+  };
+
+  const handlePromoteUser = async (user: SearchableUser) => {
+    const { error } = await supabase.from("users").update({ role: "admin" }).eq("email", user.email);
+    if (error) { console.error("Promote user error:", error); return; }
+    setSelectedUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, accountType: "admin" } : u)));
+  };
+
+  const handleDeleteUser = async (user: SearchableUser) => {
+    const { error } = await supabase.from("users").delete().eq("email", user.email);
+    if (error) { console.error("Delete user error:", error); return; }
+    setSelectedUsers((prev) => prev.filter((u) => u.id !== user.id));
+  };
+
+  const handleCancelEvent = async (eventId: string) => {
+    const dbId = eventId.split("-")[0];
+    const { error } = await supabase.from("calendar").delete().eq("id", Number(dbId));
+    if (error) { console.error("Cancel event error:", error); return; }
+    setAdminEvents((currentEvents) => currentEvents.filter((event) => !event.id.startsWith(dbId)));
+  };
+
+  const handleCreateEvent = async () => {
+    if (!canCreateEvent || !selectedDate) return;
 
     const formattedStartTime = formatTimeLabel(newEvent.startTime);
     const formattedEndTime = formatTimeLabel(newEvent.endTime);
@@ -674,15 +656,42 @@ export function AdminDashboard({
       newEvent.isMultiDay && multiDayUntilDate
         ? getStartOfDay(multiDayUntilDate)
         : startDate;
+
+    const { data, error } = await supabase
+      .from("calendar")
+      .insert({
+        name: newEvent.name.trim(),
+        description: newEvent.description.trim(),
+        start_date: formatDateInputValue(startDate),
+        end_date: formatDateInputValue(endDate),
+        time_start: toTimetz(newEvent.startTime),
+        time_end: toTimetz(newEvent.endTime),
+        num_of_attendees: newEvent.unlimited ? null : Number(newEvent.capacity) || null,
+        location: newEvent.location.trim(),
+        link: newEvent.link.trim(),
+        multi_day: newEvent.isMultiDay,
+        monday: newEvent.repeatDays.includes(1),
+        tuesday: newEvent.repeatDays.includes(2),
+        wednesday: newEvent.repeatDays.includes(3),
+        thursday: newEvent.repeatDays.includes(4),
+        friday: newEvent.repeatDays.includes(5),
+        saturday: newEvent.repeatDays.includes(6),
+        sunday: newEvent.repeatDays.includes(0),
+      })
+      .select()
+      .single();
+
+    if (error) { console.error("Create event error:", error); return; }
+    const r = data as any;
+    const time = `${formattedStartTime} - ${formattedEndTime}`;
     const eventDates = newEvent.isMultiDay
       ? buildRecurringEventDates(startDate, endDate, newEvent.repeatDays)
       : [startDate];
-    const seriesId = Date.now().toString();
 
     setAdminEvents((currentEvents) => [
       ...currentEvents,
       ...eventDates.map((eventDate, index) => ({
-        id: `${seriesId}-${index}`,
+        id: `${r.id}-${index}`,
         name: newEvent.name.trim(),
         description: newEvent.description.trim(),
         date: new Date(eventDate),
@@ -690,7 +699,7 @@ export function AdminDashboard({
         endDate: new Date(endDate),
         startTime: formattedStartTime,
         endTime: formattedEndTime,
-        time: `${formattedStartTime} - ${formattedEndTime}`,
+        time,
         location: newEvent.location.trim(),
         link: newEvent.link.trim(),
         capacity: newEvent.unlimited ? "Unlimited" : newEvent.capacity.trim(),
@@ -703,7 +712,6 @@ export function AdminDashboard({
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
       <section className="relative h-[100px] overflow-hidden">
         <div className="absolute inset-0 bg-pink-700 flex items-center justify-center">
           <div className="text-center text-white px-4 max-w-4xl">
@@ -712,8 +720,6 @@ export function AdminDashboard({
         </div>
       </section>
 
-
-      {/* Pending Users Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Pending Users</h2>
@@ -735,65 +741,67 @@ export function AdminDashboard({
                     const isOlderThan14Days = Date.now() - new Date(user.createdAt).getTime() >= warningThresholdMs;
 
                     return (
-                    <tr
-                      key={`${user.firstName}-${user.lastName}-${user.createdAt}`}
-                      className={isOlderThan14Days ? "bg-red-200 hover:bg-red-300" : "hover:bg-gray-50"}
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.firstName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.lastName}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.accountType}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex items-center gap-2">
-                          <span>{user.createdAt}</span>
-                          {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <div className="flex items-center gap-3 whitespace-nowrap">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={`Activate ${user.firstName} ${user.lastName}`}
-                                onClick={() =>
-                                  openConfirmationDialog(
-                                    "accept",
-                                    `${user.firstName} ${user.lastName}`
-                                  )
-                                }
-                                className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
-                              >
-                                <UserCheck className="h-4 w-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Activate {user.firstName} {user.lastName}
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                aria-label={`Reject ${user.firstName} ${user.lastName}`}
-                                onClick={() =>
-                                  openConfirmationDialog(
-                                    "reject",
-                                    `${user.firstName} ${user.lastName}`
-                                  )
-                                }
-                                className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Reject {user.firstName} {user.lastName}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
+                      <tr
+                        key={user.id}
+                        className={isOlderThan14Days ? "bg-red-200 hover:bg-red-300" : "hover:bg-gray-50"}
+                      >
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.firstName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.lastName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.accountType}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{user.eventAttended}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="flex items-center gap-2">
+                            <span>{user.createdAt}</span>
+                            {isOlderThan14Days ? <TriangleAlert className="h-4 w-4 text-red-600" aria-label="Account pending for more than 14 days" /> : null}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="flex items-center gap-3 whitespace-nowrap">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Activate ${user.firstName} ${user.lastName}`}
+                                  onClick={() =>
+                                    openConfirmationDialog(
+                                      "accept",
+                                      `${user.firstName} ${user.lastName}`,
+                                      () => handleAcceptUser(user)
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-2 rounded-md bg-green-50 px-3 py-1 text-sm font-semibold text-green-700 transition hover:bg-green-100"
+                                >
+                                  <UserCheck className="h-4 w-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Activate {user.firstName} {user.lastName}
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`Reject ${user.firstName} ${user.lastName}`}
+                                  onClick={() =>
+                                    openConfirmationDialog(
+                                      "reject",
+                                      `${user.firstName} ${user.lastName}`,
+                                      () => handleRejectUser(user)
+                                    )
+                                  }
+                                  className="inline-flex items-center gap-2 rounded-md bg-red-50 px-3 py-1 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                                >
+                                  <UserX className="h-4 w-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Reject {user.firstName} {user.lastName}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })
                 ) : (
@@ -813,11 +821,9 @@ export function AdminDashboard({
               >
                 Previous
               </button>
-
               <span className="text-sm text-gray-600">
                 Page {currentPage} of {totalPages}
               </span>
-
               <button
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage === totalPages}
@@ -830,7 +836,6 @@ export function AdminDashboard({
         </div>
       </section>
 
-      {/* Account Search Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Account Search</h2>
@@ -886,7 +891,8 @@ export function AdminDashboard({
                           onClick={() =>
                             openConfirmationDialog(
                               "promote",
-                              `${user.firstName} ${user.lastName}`
+                              `${user.firstName} ${user.lastName}`,
+                              () => handlePromoteUser(user)
                             )
                           }
                           className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
@@ -900,7 +906,8 @@ export function AdminDashboard({
                           onClick={() =>
                             openConfirmationDialog(
                               "delete",
-                              `${user.firstName} ${user.lastName}`
+                              `${user.firstName} ${user.lastName}`,
+                              () => handleDeleteUser(user)
                             )
                           }
                           className="inline-flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
@@ -938,7 +945,8 @@ export function AdminDashboard({
                   {actionLabels[confirmationState.action].title}
                 </DialogTitle>
                 <DialogDescription className="text-gray-600">
-                  {actionLabels[confirmationState.action].description} <span className="font-medium text-gray-800">{confirmationState.targetLabel}</span>
+                  {actionLabels[confirmationState.action].description}{" "}
+                  <span className="font-medium text-gray-800">{confirmationState.targetLabel}</span>
                 </DialogDescription>
               </DialogHeader>
 
@@ -978,7 +986,6 @@ export function AdminDashboard({
         </DialogContent>
       </Dialog>
 
-      {/* Caldenar Management Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Calendar Management</h2>
@@ -1030,7 +1037,7 @@ export function AdminDashboard({
 
                 {selectedDate ? (
                   <div className="space-y-4">
-                    <div className = "space-y-2">
+                    <div className="space-y-2">
                       <Label htmlFor="admin-event-name">Event name</Label>
                       <Input
                         id="admin-event-name"
@@ -1042,16 +1049,13 @@ export function AdminDashboard({
                       />
                     </div>
 
-                    <div className = "space-y-2">
+                    <div className="space-y-2">
                       <Label htmlFor="admin-event-description">Description</Label>
                       <Textarea
                         id="admin-event-description"
                         value={newEvent.description}
                         onChange={(event) =>
-                          setNewEvent({
-                            ...newEvent,
-                            description: event.target.value,
-                          })
+                          setNewEvent({ ...newEvent, description: event.target.value })
                         }
                         placeholder="Add event details"
                         rows={4}
@@ -1084,10 +1088,7 @@ export function AdminDashboard({
                                     type="checkbox"
                                     checked={newEvent.repeatDays.includes(dayOption.value)}
                                     onChange={(event) =>
-                                      handleRepeatDayChange(
-                                        dayOption.value,
-                                        event.target.checked
-                                      )
+                                      handleRepeatDayChange(dayOption.value, event.target.checked)
                                     }
                                     className="h-4 w-4 rounded border-gray-300 text-pink-700 focus:ring-pink-500"
                                   />
@@ -1113,10 +1114,7 @@ export function AdminDashboard({
                               value={newEvent.untilDate}
                               min={minimumUntilDate}
                               onChange={(event) =>
-                                setNewEvent({
-                                  ...newEvent,
-                                  untilDate: event.target.value,
-                                })
+                                setNewEvent({ ...newEvent, untilDate: event.target.value })
                               }
                             />
                             {!multiDayUntilIsValid ? (
@@ -1151,10 +1149,7 @@ export function AdminDashboard({
                             setNewEvent({ ...newEvent, endTime: event.target.value })
                           }
                           onBlur={(event) =>
-                            setNewEvent({
-                              ...newEvent,
-                              endTime: formatTimeLabel(event.target.value),
-                            })
+                            setNewEvent({ ...newEvent, endTime: formatTimeLabel(event.target.value) })
                           }
                           list="admin-event-time-options"
                           placeholder="e.g. 7:30 PM"
@@ -1174,7 +1169,7 @@ export function AdminDashboard({
                       </datalist>
 
                       <div className="space-y-2 md:col-span-2">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-end ">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-end">
                           <div className="w-half md:max-w-xs space-y-2">
                             <Label htmlFor="admin-event-capacity">Capacity</Label>
                             <Input
@@ -1183,10 +1178,7 @@ export function AdminDashboard({
                               min="1"
                               value={newEvent.capacity}
                               onChange={(event) =>
-                                setNewEvent({
-                                  ...newEvent,
-                                  capacity: event.target.value,
-                                })
+                                setNewEvent({ ...newEvent, capacity: event.target.value })
                               }
                               disabled={newEvent.unlimited}
                               placeholder={newEvent.unlimited ? "Unlimited" : "Enter capacity"}
@@ -1213,22 +1205,19 @@ export function AdminDashboard({
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div className = "space-y-2">
+                      <div className="space-y-2">
                         <Label htmlFor="admin-event-location">Location</Label>
                         <Input
                           id="admin-event-location"
                           value={newEvent.location}
                           onChange={(event) =>
-                            setNewEvent({
-                              ...newEvent,
-                              location: event.target.value,
-                            })
+                            setNewEvent({ ...newEvent, location: event.target.value })
                           }
                           placeholder="In-person location"
                         />
                       </div>
 
-                      <div className = "space-y-2">
+                      <div className="space-y-2">
                         <Label htmlFor="admin-event-link">Link</Label>
                         <Input
                           id="admin-event-link"
@@ -1341,7 +1330,6 @@ export function AdminDashboard({
         </div>
       </section>
 
-      {/* Mentorship Management Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-gray-900 mb-6">Mentorship Management</h2>
@@ -1427,7 +1415,7 @@ export function AdminDashboard({
               <h3 className="text-2xl text-gray-900 mb-4">Add a Mentor</h3>
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className = "space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="mentor-first-name">First Name</Label>
                     <Input
                       id="mentor-first-name"
@@ -1439,7 +1427,7 @@ export function AdminDashboard({
                     />
                   </div>
 
-                  <div className = "space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="mentor-last-name">Last Name</Label>
                     <Input
                       id="mentor-last-name"
@@ -1452,7 +1440,7 @@ export function AdminDashboard({
                   </div>
                 </div>
 
-                <div className = "space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="mentor-email">Email</Label>
                   <Input
                     id="mentor-email"
@@ -1465,7 +1453,7 @@ export function AdminDashboard({
                   />
                 </div>
 
-                <div className = "space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="mentor-bio">Bio</Label>
                   <Textarea
                     id="mentor-bio"
@@ -1485,7 +1473,7 @@ export function AdminDashboard({
                   </p>
                 </div>
 
-                <div className = "space-y-2">
+                <div className="space-y-2">
                   <Label htmlFor="mentor-photo">Upload Photo (Optional)</Label>
                   <Input
                     id="mentor-photo"
@@ -1495,6 +1483,7 @@ export function AdminDashboard({
                       setNewMentor({
                         ...newMentor,
                         photoName: event.target.files?.[0]?.name ?? "",
+                        photoFile: event.target.files?.[0] ?? null,
                       })
                     }
                     className="cursor-pointer"
