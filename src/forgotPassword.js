@@ -2,7 +2,7 @@ import { supabase } from './supabaseConnection';
 
 export const sendResetPasswordEmail = async (email) => {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://divas-in-tech.github.io/DIVAS-in-Tech/reset-password',
+        redirectTo: 'https://divas-in-tech.github.io/DIVAS-in-Tech/',
     });
 
     if (error) {
