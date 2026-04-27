@@ -48,14 +48,12 @@ useEffect(() => {
       if (user) {
         const { data: profileData, error } = await supabase
           .from("users")
-          .select("type")
-          .eq("id", user.id)
+          .select("role")
+          .eq("email", user.email)
           .single();
 
-        if (profileData && profileData.type === "admin") {
+        if (profileData && profileData.role === "admin") {
           setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
         }
         
         if (error) console.error("Error fetching profile:", error.message);
