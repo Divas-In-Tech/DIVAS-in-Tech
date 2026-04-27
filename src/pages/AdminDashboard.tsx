@@ -283,8 +283,8 @@ export function AdminDashboard() {
 
       const mapped: AdminEvent[] = [];
       for (const r of data ?? []) {
-        const start = new Date(r.start_date);
-        const end = new Date(r.end_date);
+        const start = parseDateInput(r.start_date) ?? new Date(r.start_date);
+        const end = parseDateInput(r.end_date) ?? new Date(r.end_date);
         const startTime = fmtTimetz(r.time_start);
         const endTime = fmtTimetz(r.time_end);
         const time = startTime && endTime ? `${startTime} - ${endTime}` : startTime;
