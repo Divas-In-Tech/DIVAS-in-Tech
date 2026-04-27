@@ -16,28 +16,36 @@ export function MentorPage() {
     const mentors: Mentor[] = [
     {
             id: 1,
-            name: "Mentor Name",
-            bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            name: "Marisol Valeriano",
+            bio: "She is currently a Senior studying Computer Science at Marquette University. Marisol has been coding since high school and has experience with many languages such as Java, Python, and Javascript. She is currently working on a year long project with three other students to create a website for a local organization.",
             icon: Crown,
             color: "purple",
             email:"mentor1@example.com",
         },
         {
             id: 2,
-            name: "Mentor Name",
-            bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            name: "Brigid Donaghy",
+            bio: "She is currently a senior studying Computer Science at Marquette University. Brigid has been coding since Middle School and has experience with many lannguage such as Java, HTML, and Python. she is currently working on a year long project with three other studetns to create a website for a local organization.",
             icon: Crown,
             color: "violet",
             email:"mentor2@example.com",
         },
         {
             id: 3,
-            name: "Mentor Name",
-            bio:"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            name: "Sri Medicherla",
+            bio:"She is currently a senior studying Computer Science at Marquette University. Sri has been coding since high school and has experience with many languages such as Java, Python, and C. She is currently working on a year long project with three other students to create a website for a local organization.",
             icon: Crown,
             color: "purple",
             email:"mentor3@example.com",
         },
+        {
+            id: 4,
+            name: "Juan De Los Santos",
+            bio: "He is currently a senior studying Computer Science at Marquette University. Juan has been coding since high school and has experience with many languages such as Java, Python, and C. He is currently working on a year long project with three other students to create a website for a local organization.",
+            icon: Crown,
+            color: "violet",
+            email: "mentor4@example.com"
+        }
     ];
 
     const getColorClasses = (color: "purple" | "violet") => {
