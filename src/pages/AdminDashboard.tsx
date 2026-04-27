@@ -449,16 +449,6 @@ export function AdminDashboard() {
       confirm: "Cancel Event",
       description: "This will remove this scheduled event:",
     },
-    addMentor: {
-      title: "Add this mentor?",
-      confirm: "Confirm",
-      description: "This will add this mentor record:",
-    },
-    cancelEvent: {
-      title: "Cancel this event?",
-      confirm: "Cancel Event",
-      description: "This will remove this scheduled event:",
-    },
   };
 
   const handleConfirmAction = () => {
