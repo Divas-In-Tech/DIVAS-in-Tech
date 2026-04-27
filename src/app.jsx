@@ -21,6 +21,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false); 
   const [userName, setUserName] = useState("");
   const [showLogin, setShowLogin] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   // without this, the reset email can't redirect to the reset page
   const [currentPage, setCurrentPage] = useState(() => {
@@ -59,7 +60,27 @@ useEffect(() => {
         if (error) console.error("Error fetching profile:", error.message);
       }
     }
-    
+
+
+    async function checkApprovalStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profileData, error } = await supabase
+          .from("users")
+          .select("approved")
+          .eq("email", user.email)
+          .single();
+
+        if (profileData && profileData.approved === true) {
+          setIsApproved(true);
+        }
+        
+        if (error) console.error("Error fetching profile:", error.message);
+      }
+    }
+
+    checkApprovalStatus()
     checkAdminStatus();
   }, []);
 
@@ -100,12 +121,13 @@ useEffect(() => {
         onLoginClick={() => setShowLogin(true)}
         onLogout={handleLogout}
         userName={userName}
+        isApproved={isApproved}
       />
 
       {currentPage === "home" && <HomePage />}
       {currentPage === "mission" && <MissionPage />}
       {currentPage === "contact" && <ContactPage />}
-      {currentPage === "mentors" && <MentorPage />}
+      {currentPage === "mentors" && isApproved && <MentorPage />}
       {currentPage === "board" && <BoardPage />}
       {currentPage === "partners" && <PartnersPage />}
       {currentPage === "calendar" && (
