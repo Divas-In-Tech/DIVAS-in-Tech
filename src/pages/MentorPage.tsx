@@ -141,9 +141,11 @@ export function MentorPage() {
                                         onChange={(e) => setMessage(e.target.value)}
                                     />
                                     <div className="flex gap-2">
-                                    <Button type="submit" className="w-full bg-violet-500 hover: bg-purple-700 text-white py-2 rounded-lg text-sm">
-                                        Send 
-                                    </Button>
+                                    <button
+                                        onClick={() => setSelectedMentor(null)}
+                                        className="w-full bg-violet-500 hover: bg-purple-700 text-white py-2 rounded-lg text-sm">
+                                        send
+                                    </button>   
                                     </div>
                                 </div>
                             </div>
