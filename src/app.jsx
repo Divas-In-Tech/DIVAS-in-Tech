@@ -25,9 +25,13 @@ export default function App() {
 
   // without this, the reset email can't redirect to the reset page
   const [currentPage, setCurrentPage] = useState(() => {
-    if (window.location.pathname === '/reset-password') {
+    if (window.location.hash.includes("type=recovery")) {
       return "reset-password";
     }
+    if (window.location.pathname.includes('/reset-password')) {
+      return "reset-password";
+    }
+
     return "home";
   });
 
@@ -40,6 +44,18 @@ export default function App() {
         setUserName(`${firstName} ${lastName}`.trim() || "User");
       }
     });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setCurrentPage("reset-password");
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
 useEffect(() => {
