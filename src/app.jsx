@@ -153,7 +153,15 @@ useEffect(() => {
         />
       )}
       {currentPage === "admin" && isAdmin && <AdminDashboard />}
-      {currentPage === "reset-password" && <ResetPassword />}
+      {currentPage === "reset-password" && (
+        <ResetPassword 
+          onGoToLogin={() => {
+            window.history.replaceState(null, '', window.location.pathname);
+            setCurrentPage("home");
+            setShowLogin(true);
+          }} 
+        />
+      )}
 
       <LoginDialog
         open={showLogin}
