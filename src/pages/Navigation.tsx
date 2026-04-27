@@ -12,9 +12,10 @@ interface NavigationProps {
   onLoginClick: () => void;
   onLogout: () => void;
   userName: string;
+  isApproved: boolean;
 }
 
-export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLoginClick, onLogout, userName }: NavigationProps) {
+export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLoginClick, onLogout, userName, isApproved }: NavigationProps) {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,7 +51,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLog
               Board
               </button>
         {/*Mentor Page down below V */}
-            {isLoggedIn &&(
+            {isLoggedIn && isApproved && (
             <button
               onClick={() => onNavigate('mentors')}
               className={`transition-colors ${
