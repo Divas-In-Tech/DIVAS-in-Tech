@@ -9,6 +9,7 @@ export const registerUser = async (email, password, firstName, lastName, eventAt
         email,
         password,
         // This is stashed in order to add to the users table in the database
+        redirectTo: 'https://divas-in-tech.github.io/DIVAS-in-Tech/',
         options: {
             data: {
                 first_name: firstName,
