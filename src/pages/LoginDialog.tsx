@@ -81,6 +81,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
         const name = user?.user_metadata?.first_name || "";
 
         onLogin(name);
+        window.location.reload();
       }
 
       setForm({
