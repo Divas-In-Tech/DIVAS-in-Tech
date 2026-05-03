@@ -21,7 +21,7 @@ export function BoardPage() {
       bio: "Tania Mishra is a student at Marquette University. Tania has been interested in technology since her first digital exploration class in 6th grade. Since then, she has been involved in multiple programs focused on empowering and inspiring girls in tech, such as ProjectCSGirls and Girls Who Code. Tania is also a 2021 National Winner and 3-times Wisconsin Affiliate winner for NCWIT's Aspirations in Computing Award. She has interned at Northwestern Mutual as a mainframe developer, a full-stack developer, and a student instructor for the high school intern program. Tania wants to help lead more girls into the path of computer science, and she hopes to accomplish this through DTech!",
       icon: Crown,
       color: "purple",
-      linkedIn: "#"
+      linkedIn: "https://www.linkedin.com/in/taniamishra127/"
     },
     {
       id: 2,
@@ -30,7 +30,7 @@ export function BoardPage() {
       bio: "Sarah Rubenstein is a student at UW Madison who is majoring in computer science. She's been coding since middle school and has experience in a variety of languages such as Java, JavaScript, Python, and HTML/CSS. She was the software lead on her high school's FIRST robotics team. Sarah has interned at Northwestern Mutual as a web developer, and at Concurrency where she worked with cloud computing. She is passionate about teaching others to code and excited to work with students.",
       icon: Users,
       color: "violet",
-      linkedIn: "#"
+      linkedIn: "https://www.linkedin.com/in/sarah-rubenstein-b042471b1/"
     },
     {
       id: 3,
@@ -39,7 +39,7 @@ export function BoardPage() {
       bio: "Sanjana Tarigoppula is a student at the University of Wisconsin-Madison. She started coding her sophomore year of high school, and is now majoring in Computer Sciences and pursuing a certificate in Business. Sanjana has interned at GE Healthcare and gained experience in Technical Product Management and Software Engineering. She will be continuing her journey at GE Healthcare as a full-time DTLP after graduation. Sanjana is very excited to serve on the board for Divas in Technology and increase awareness on tech careers!",
       icon: Wallet,
       color: "purple",
-      linkedIn: "#"
+      linkedIn: "https://www.linkedin.com/in/sanjanatarigoppula/"
     },
     {
       id: 4,
@@ -48,7 +48,7 @@ export function BoardPage() {
       bio: "Alyshba Sharwani is a student at the University of Wisconsin-Madison, where she is planning on completing a double major in Statistics and English and a minor in Textiles and Fashion Design. Her past extracurricular leadership experiences and organizational skills guide her role as Secretary of DTech, while her interest and experiences in art and design, including receiving several Scholastic art awards, lead her work as Brand Designer of DTech.",
       icon: Palette,
       color: "violet",
-      linkedIn: "#"
+      linkedIn: "https://www.linkedin.com/in/alyshba-sharwani/"
     }
   ];
 

@@ -85,11 +85,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-
-
-# Playwright
-/playwright-report/
-/playwright/.cache/
-/playwright/.auth/
-/test-results/
-/blob-report/
+.vscode/

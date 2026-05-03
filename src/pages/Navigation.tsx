@@ -1,25 +1,28 @@
 import { Button } from "../components/ui/button";
-import { LogOut, LogIn, Flower } from "lucide-react";
+import { LogOut, LogIn,  } from "lucide-react";
+import logo from "./assets/DITLogo Purple.png";
 
-type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact";
+type Page = "home" | "mission" | "board" | "mentors" | "partners" | "calendar" |"contact" | "admin";
 
 interface NavigationProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   onLoginClick: () => void;
   onLogout: () => void;
   userName: string;
+  isApproved: boolean;
 }
 
-export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, onLogout, userName }: NavigationProps) {
+export function Navigation({ currentPage, onNavigate, isLoggedIn, isAdmin, onLoginClick, onLogout, userName, isApproved }: NavigationProps) {
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-2 bg-[rgba(221,79,221,0)]">
-            <Flower className="w-8 h-8 text-violet-600" />
-            <span className="text-[rgb(145,78,228)]">Divas in Tech</span>
+            <img src={logo} alt="Divas in Tech Logo" className="w-12 h-10" />
+            <span className="text-[#3F02B0]">Divas in Tech</span>
           </div>
           
           <div className="flex items-center gap-6">
@@ -47,6 +50,8 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Board
               </button>
+        {/*Mentor Page down below V */}
+            {isLoggedIn && isApproved && (
             <button
               onClick={() => onNavigate('mentors')}
               className={`transition-colors ${
@@ -55,6 +60,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Mentors
             </button>
+            )}
             <button
               onClick={() => onNavigate('partners')}
               className={`transition-colors ${
@@ -79,6 +85,17 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn, onLoginClick, 
             >
               Calendar
             </button>
+            {isLoggedIn && isAdmin ? (
+              <button
+              onClick={() => onNavigate('admin')}
+              className={`transition-colors ${
+                currentPage === 'admin' ? 'text-purple-700' : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Admin Dashboard
+            </button>
+            )
+            : null}
           </div>
 
           <div className="flex items-center gap-3">

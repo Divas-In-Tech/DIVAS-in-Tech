@@ -1,14 +1,13 @@
 import { Card } from "../components/ui/card";
 import { Heart, Users, Target, HandHeart } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-
 export function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-violet-50 to-white">
       {/* Hero Section */}
       <section className="relative h-[500px] overflow-hidden">
         <ImageWithFallback
-          src="https://images.unsplash.com/photo-1758599668125-e154250f24bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjB2b2x1bnRlZXJzJTIwaGVscGluZ3xlbnwxfHx8fDE3NjEwNzA2OTl8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+          src="https://images.pexels.com/photos/7112/woman-typing-writing-windows.jpg"
           alt="Community volunteers"
           className="w-full h-full object-cover"
         />
@@ -108,7 +107,7 @@ export function HomePage() {
             </div>
             <div className="relative h-[400px] rounded-lg overflow-hidden shadow-xl">
               <ImageWithFallback
-                src="https://images.unsplash.com/photo-1665072204431-b3ba11bd6d06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaXZlcnNlJTIwdGVhbSUyMGNvbGxhYm9yYXRpb258ZW58MXx8fHwxNzYxMTA1MjUzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+                src="https://t4.ftcdn.net/jpg/03/16/87/77/360_F_316877700_FFoXaAcUEYsPNmaYli3BrSRZo3xMCyqI.jpg"
                 alt="Team collaboration"
                 className="w-full h-full object-cover"
               />

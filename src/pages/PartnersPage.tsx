@@ -19,7 +19,7 @@ export function PartnersPage() {
       description: "The Milwaukee School of Engineering partners with DTech programs through their STEM outreach team and the We Energies STEM Center at MSOE. Located in Milwaukee, WI, MSOE offers bachelor's and master's degrees in top-ranked engineering, business and nursing programs. MSOE offers year round STEM outreach programs for K-12 students and educators.",
       icon: Building2,
       color: "purple",
-      image: "engineering education"
+      image: "https://msoe.s3.amazonaws.com/files/callouts/wide_xlrg_20191024-diercks-hall-exteriors-12-2.jpg"
     },
     {
       id: 2,
@@ -27,7 +27,7 @@ export function PartnersPage() {
       description: "Edgewood's Office of Science Outreach (OSO) aims to support STEM education within and beyond the Edgewood community. They conduct science outreach activities for their community's youth, teachers, and general public. OSO encourages Edgewood's staff, faculty, and students to be involved in these outreach activities, and they empower other campus groups to become involved in spreading science education to the community.",
       icon: GraduationCap,
       color: "violet",
-      image: "science education"
+      image: "https://www.thoughtco.com/thmb/nGIxFR1wpg3mLoJvXGMW0k768zQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/edgewood-college-5a296cb347c2660036e31d96.jpg"
     },
     {
       id: 3,
@@ -35,7 +35,7 @@ export function PartnersPage() {
       description: "Journey House's mission is to empower families of Southside Milwaukee to move out of poverty by offering Adult Education, Youth Development, THRIVE Workforce Development, and Family Engagement. Their vision is that every individual and family in Clarke Square will be given the tools and resources to succeed and contribute personally, professionally, and civically to the neighborhood and our greater Milwaukee community.",
       icon: Sparkles,
       color: "purple",
-      image: "collaboration teamwork"
+      image: "https://www.jsonline.com/gcdn/-mm-/a230d50c657011c52f8777f50aa9bb9213f49370/c=0-57-1920-1142/local/-/media/2019/01/31/WIGroup/Milwaukee/636845435746940481-Gurda-Journey-HOuse.jpg"
     }
   ];
 
@@ -89,7 +89,7 @@ export function PartnersPage() {
                     {/* Image */}
                     <div className={`relative h-64 md:h-auto ${index % 2 === 1 ? 'md:col-start-2' : ''}`}>
                       <ImageWithFallback 
-                        src={`https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800`}
+                        src={partner.image}
                         alt={partner.name}
                         className="w-full h-full object-cover"
                       />
