@@ -1,9 +1,25 @@
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ContactPage } from "../pages/ContactPage";
 
+const { invokeMock } = vi.hoisted(() => ({
+  invokeMock: vi.fn(),
+}));
+
+vi.mock("../supabaseConnection", () => ({
+  supabase: {
+    functions: {
+      invoke: invokeMock,
+    },
+  },
+}));
+
 describe("ContactPage", () => {
+  beforeEach(() => {
+    invokeMock.mockReset();
+  });
+
   test("renders the contact form fields name, topic, email, and message", () => {
     render(React.createElement(ContactPage));
 
@@ -42,5 +58,62 @@ describe("ContactPage", () => {
     expect(emailInput.value).toBe("john@test.com");
     expect(messageInput.value).toBe("Hello there");
     expect(topicSelect.value).toBe("feedback");
+  });
+
+  test("blocks submit and shows an error when the message contains profanity", async () => {
+    render(React.createElement(ContactPage));
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "John Doe" },
+    });
+    fireEvent.change(screen.getByLabelText(/topic/i), {
+      target: { value: "feedback" },
+    });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "john@test.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/message/i), {
+      target: { value: "Don't be an asshole" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/please ensure your message is appropriate/i)
+    ).toBeInTheDocument();
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  test("clears the profanity error after the message is updated", async () => {
+    render(React.createElement(ContactPage));
+
+    const messageInput = screen.getByLabelText(/message/i);
+
+    fireEvent.change(screen.getByLabelText(/name/i), {
+      target: { value: "John Doe" },
+    });
+    fireEvent.change(screen.getByLabelText(/topic/i), {
+      target: { value: "feedback" },
+    });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "john@test.com" },
+    });
+    fireEvent.change(messageInput, {
+      target: { value: "Don't be an asshole" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /send message/i }));
+
+    expect(
+      await screen.findByText(/please ensure your message is appropriate/i)
+    ).toBeInTheDocument();
+
+    fireEvent.change(messageInput, {
+      target: { value: "Thanks for your help" },
+    });
+
+    expect(
+      screen.queryByText(/please ensure your message is appropriate/i)
+    ).not.toBeInTheDocument();
   });
 });

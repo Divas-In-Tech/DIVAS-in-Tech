@@ -2,6 +2,10 @@ import { Card } from "../components/ui/card";
 import {Button} from "../components/ui/button";
 import {Crown, LucideIcon } from "lucide-react";
 import { useState } from "react";
+import {
+    containsInappropriateLanguage,
+    INAPPROPRIATE_MESSAGE_ERROR,
+} from "../utils/profanity";
 
 {/*Only make this page appear when logged in for all types of users and be able to contact them through email*/}
 interface Mentor {
@@ -50,6 +54,7 @@ export function MentorPage() {
     ];
     const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
     const [message, setMessage] = useState("");
+    const [messageError, setMessageError] = useState("");
 
     const getColorClasses = (color: "purple" | "violet") => {
         if (color === "violet") {
@@ -68,6 +73,23 @@ export function MentorPage() {
             gradient: "from-purple-100 to-violet-200",
             btnBg: "bg-purple-600 hover:bg-purple-700"
         };
+    };
+
+    const closeMentorModal = () => {
+        setSelectedMentor(null);
+        setMessage("");
+        setMessageError("");
+    };
+
+    const handleMentorSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (containsInappropriateLanguage(message)) {
+            setMessageError(INAPPROPRIATE_MESSAGE_ERROR);
+            return;
+        }
+
+        closeMentorModal();
     };
 
     return (
@@ -129,24 +151,39 @@ export function MentorPage() {
                                         Contact {selectedMentor.name}
                                     </h3>
                                     <button
-                                        onClick={() => setSelectedMentor(null)}
+                                        type="button"
+                                        onClick={closeMentorModal}
                                         className="text-lg font-bold text-gray-600 hover:text-black">
                                         ✕
                                     </button>
                                 </div>
+                                    <form onSubmit={handleMentorSubmit}>
                                     <textarea
                                         className="w-full border rounded-lg p-3 text-sm mb-4 h-40"
                                         placeholder={`Message ${selectedMentor.name}...`}
                                         value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
+                                        aria-invalid={Boolean(messageError)}
+                                        aria-describedby={messageError ? "mentor-message-error" : undefined}
+                                        onChange={(e) => {
+                                            setMessage(e.target.value);
+                                            if (messageError) {
+                                                setMessageError("");
+                                            }
+                                        }}
                                     />
+                                    {messageError && (
+                                        <p id="mentor-message-error" role="alert" className="mb-4 text-sm text-red-600">
+                                            {messageError}
+                                        </p>
+                                    )}
                                     <div className="flex gap-2">
                                     <button
-                                        onClick={() => setSelectedMentor(null)}
+                                        type="submit"
                                         className="w-full bg-violet-500 hover: bg-purple-700 text-white py-2 rounded-lg text-sm">
-                                        send
-                                    </button>   
+                                        Send
+                                    </button>
                                     </div>
+                                    </form>
                                 </div>
                             </div>
                         )}
