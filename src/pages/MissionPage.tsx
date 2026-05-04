@@ -1,5 +1,5 @@
 import { Card } from "../components/ui/card";
-import { Target, Users, Lightbulb, Award, Heart, Sparkles } from "lucide-react";
+import { Target, Users, Lightbulb, Heart, Sparkles } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 export function MissionPage() {
@@ -11,13 +11,29 @@ export function MissionPage() {
           <div className="text-center">
             <h1 className="text-5xl mb-6">About Divas in Technology</h1>
             <p className= "text-2xl max-w-3xl mx-auto opacity-95">
-Divas in Technology (DTech) is a nonprofit organization working to expand the outreach of computer science to younger girls.
+Divas in Technology (DTech) is a nonprofit organization focused on empowering girls in technology and changing the future. 
 By hosting programs that teach various computer science skills, we hope to increase interest in tech-related fields and increase 
 enrollment in computer science courses in school. DTech is run by high school and college students in Wisconsin who are passionate 
-              about helping girls get access to tech opportunities and mentorship early on. Divas in Technology is focused on empowering girls
-              in technology and changing the future.
+              about helping girls get access to tech opportunities and mentorship early on. 
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Impact Section */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto">
+          <Card className="relative overflow-hidden border-0 bg-gradient-to-r from-purple-700 via-violet-600 to-purple-600 p-8 text-white shadow-xl sm:p-10">
+            <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
+
+            <div className="relative text-center">
+              <h2 className="text-4xl mb-6 text-white">Our Vision</h2>
+              <p className="mx-auto max-w-4xl text-lg leading-8 text-white/90 sm:text-xl">
+                With women making up only 23% of computer science students in Wisconsin, Divas in Technology aims to increase that number to 50% by providing resources, mentorship, and a community to young girls interested in the tech field.
+              </p>
+            </div>
+          </Card>
         </div>
       </section>
 
@@ -101,14 +117,14 @@ enrollment in computer science courses in school. DTech is run by high school an
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl text-center mb-12 text-purple-900">What We Do</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card className="p-6 border-l-4 border-purple-600">
+          <div className="flex flex-wrap justify-center gap-8">
+            <Card className="w-full max-w-xl p-6 border-l-4 border-purple-600">
               <div className="flex items-start gap-4">
                 <div className="bg-purple-100 p-3 rounded-lg flex-shrink-0">
                   <Target className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl mb-2">Mentorship Programs</h3>
+                  <h3 className="text-xl mb-2">Mentorship Program</h3>
                   <p className="text-gray-600">
                     Connect with experienced professionals who provide guidance, career advice, and 
                     support as you navigate your tech journey.
@@ -117,7 +133,7 @@ enrollment in computer science courses in school. DTech is run by high school an
               </div>
             </Card>
 
-            <Card className="p-6 border-l-4 border-purple-500">
+            <Card className="w-full max-w-xl p-6 border-l-4 border-purple-500">
               <div className="flex items-start gap-4">
                 <div className="bg-gradient-to-br from-purple-100 to-purple-200 p-3 rounded-lg flex-shrink-0">
                   <Sparkles className="w-6 h-6 text-purple-700" />
@@ -132,7 +148,7 @@ enrollment in computer science courses in school. DTech is run by high school an
               </div>
             </Card>
 
-            <Card className="p-6 border-l-4 border-violet-600">
+            <Card className="w-full max-w-xl p-6 border-l-4 border-violet-600">
               <div className="flex items-start gap-4">
                 <div className="bg-gradient-to-br from-violet-100 to-purple-200 p-3 rounded-lg flex-shrink-0">
                   <Users className="w-6 h-6 text-violet-700" />
@@ -140,14 +156,14 @@ enrollment in computer science courses in school. DTech is run by high school an
                 <div>
                   <h3 className="text-xl mb-2">Networking Events</h3>
                   <p className="text-gray-600">
-                    Join regular meetups, conferences, and social events to build meaningful connections 
+                    Join social events to build meaningful connections 
                     with other women in tech.
                   </p>
                 </div>
               </div>
             </Card>
-
-            <Card className="p-6 border-l-4 border-purple-600">
+            {/* Card for later */}
+            {/* <Card className="p-6 border-l-4 border-purple-600">
               <div className="flex items-start gap-4">
                 <div className="bg-purple-100 p-3 rounded-lg flex-shrink-0">
                   <Award className="w-6 h-6 text-purple-600" />
@@ -155,39 +171,26 @@ enrollment in computer science courses in school. DTech is run by high school an
                 <div>
                   <h3 className="text-xl mb-2">Workshops</h3>
                   <p className="text-gray-600">
-                    Get help with resume reviews, interview prep, job placement assistance, and career 
+                    Get help with resumé reviews, interview prep, job placement assistance, and career 
                     advancement strategies.
                   </p>
                 </div>
               </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Section */}
-      <section className="py-16 bg-gradient-to-r from-purple-700 via-violet-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl text-center mb-12">Our Vision</h2>
-          <div className="text-center">
-            <div>
-              <div className="text-xl opacity-90">With females making up only 23% of computer science students in Wisconsin, DTech aims to increase that number to 50% by providing resources, mentorship, and a community to young girls interested in the tech field.</div>
-          
-            </div>
+            </Card> */}
           </div>
         </div>
       </section>
 
       {/* Call to Action */}
-      <section className="py-16">
+      <section className="py-16 bg-gradient-to-r from-purple-700 via-violet-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl mb-6 text-purple-900">Join Our Mission</h2>
-          <p className="text-xl text-gray-600 mb-8">
+          <h2 className="text-3xl mb-6 text-white">Join Our Mission</h2>
+          <p className="text-xl text-white mb-8">
             Whether you're just starting your tech journey or you're an experienced professional looking 
             to give back, there's a place for you in our community. Together, we're building a more 
             inclusive and innovative tech industry.
           </p>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-white">
             Login to connect with our community, access exclusive resources, and participate in upcoming events.
           </p>
         </div>

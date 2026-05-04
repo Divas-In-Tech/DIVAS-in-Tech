@@ -18,7 +18,7 @@ export function BoardPage() {
       id: 1,
       name: "Tania Mishra",
       title: "Founder, President",
-      bio: "Tania Mishra is a student at Marquette University. Tania has been interested in technology since her first digital exploration class in 6th grade. Since then, she has been involved in multiple programs focused on empowering and inspiring girls in tech, such as ProjectCSGirls and Girls Who Code. Tania is also a 2021 National Winner and 3-times Wisconsin Affiliate winner for NCWIT's Aspirations in Computing Award. She has interned at Northwestern Mutual as a mainframe developer, a full-stack developer, and a student instructor for the high school intern program. Tania wants to help lead more girls into the path of computer science, and she hopes to accomplish this through DTech!",
+      bio: "Tania Mishra is PhD student at the University of Michigan-Ann Arbor, pursuing a degree in Information. She graduated from Marquette University with a B.S. in Computer Science and Cognitive Science, with minors in Gender and Sexuality Studies and Dance and a concentration in Innovation Leadership. Tania has been involved in organizations such as ProjectCSGirls, Girls Who Code, and NCWIT. Tania founded Divas in Technology in 2020 with the goal of leading more girls into the path of computer science! ",
       icon: Crown,
       color: "purple",
       linkedIn: "https://www.linkedin.com/in/taniamishra127/"

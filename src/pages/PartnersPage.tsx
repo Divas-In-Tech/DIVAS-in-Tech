@@ -20,22 +20,6 @@ export function PartnersPage() {
       icon: Building2,
       color: "purple",
       image: "https://msoe.s3.amazonaws.com/files/callouts/wide_xlrg_20191024-diercks-hall-exteriors-12-2.jpg"
-    },
-    {
-      id: 2,
-      name: "Edgewood College",
-      description: "Edgewood's Office of Science Outreach (OSO) aims to support STEM education within and beyond the Edgewood community. They conduct science outreach activities for their community's youth, teachers, and general public. OSO encourages Edgewood's staff, faculty, and students to be involved in these outreach activities, and they empower other campus groups to become involved in spreading science education to the community.",
-      icon: GraduationCap,
-      color: "violet",
-      image: "https://www.thoughtco.com/thmb/nGIxFR1wpg3mLoJvXGMW0k768zQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/edgewood-college-5a296cb347c2660036e31d96.jpg"
-    },
-    {
-      id: 3,
-      name: "Journey House",
-      description: "Journey House's mission is to empower families of Southside Milwaukee to move out of poverty by offering Adult Education, Youth Development, THRIVE Workforce Development, and Family Engagement. Their vision is that every individual and family in Clarke Square will be given the tools and resources to succeed and contribute personally, professionally, and civically to the neighborhood and our greater Milwaukee community.",
-      icon: Sparkles,
-      color: "purple",
-      image: "https://www.jsonline.com/gcdn/-mm-/a230d50c657011c52f8777f50aa9bb9213f49370/c=0-57-1920-1142/local/-/media/2019/01/31/WIGroup/Milwaukee/636845435746940481-Gurda-Journey-HOuse.jpg"
     }
   ];
 
@@ -124,10 +108,10 @@ export function PartnersPage() {
           <h2 className="text-3xl mb-6">Interested in Partnering?</h2>
           <p className="text-xl opacity-95 mb-8">
             We're always looking for organizations that share our vision of empowering women in technology. 
-            If you're interested in collaborating with Divas in Tech, we'd love to hear from you.
+            If you're interested in collaborating with Divas in Tech, we'd love to hear from you! 
           </p>
           <p className="text-lg opacity-90">
-            Login to access our community and learn more about partnership opportunities.
+            Check out our Contact page to get in touch and explore partnership opportunities.
           </p>
         </div>
       </section>
