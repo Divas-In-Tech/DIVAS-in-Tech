@@ -1,6 +1,19 @@
 import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+
+const { invokeMock } = vi.hoisted(() => ({
+  invokeMock: vi.fn().mockResolvedValue({ data: null, error: null }),
+}));
+
+vi.mock("../supabaseConnection", () => ({
+  supabase: {
+    functions: {
+      invoke: invokeMock,
+    },
+  },
+}));
+
 import { ContactPage } from "../pages/ContactPage";
 
 describe("ContactPage", () => {
