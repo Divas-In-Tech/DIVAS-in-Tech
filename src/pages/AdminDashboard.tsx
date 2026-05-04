@@ -7,7 +7,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
-import { Calendar as CalendarIcon, Crown, Link as LinkIcon, MapPin, Search, TriangleAlert, UserCheck, UserX, Users } from "lucide-react";
+import { BadgeMinus, Calendar as CalendarIcon, Crown, Link as LinkIcon, MapPin, Search, TriangleAlert, UserCheck, UserX, Users } from "lucide-react";
 
 export type PendingUser = {
   id: string;
@@ -37,7 +37,7 @@ export type Mentor = {
   photoName?: string;
 };
 
-type ConfirmationAction = "accept" | "reject" | "promote" | "delete" | "addMentor" | "cancelEvent";
+type ConfirmationAction = "accept" | "reject" | "promote" | "demote" | "delete" | "addMentor" | "cancelEvent";
 
 type ConfirmationState = {
   action: ConfirmationAction;
@@ -434,6 +434,11 @@ export function AdminDashboard() {
       confirm: "Confirm",
       description: "This will grant this account elevated admin access:",
     },
+    demote: {
+      title: "Demote this admin?",
+      confirm: "Confirm",
+      description: "This will remove admin access from this account:",
+    },
     delete: {
       title: "Delete this account?",
       confirm: "Confirm",
@@ -621,6 +626,12 @@ export function AdminDashboard() {
     const { error } = await supabase.from("users").update({ role: "admin" }).eq("email", user.email);
     if (error) { console.error("Promote user error:", error); return; }
     setSelectedUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, accountType: "admin" } : u)));
+  };
+
+  const handleDemoteUser = async (user: SearchableUser) => {
+    const { error } = await supabase.from("users").update({ role: "user" }).eq("email", user.email);
+    if (error) { console.error("Demote user error:", error); return; }
+    setSelectedUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, accountType: "user" } : u)));
   };
 
   const handleDeleteUser = async (user: SearchableUser) => {
@@ -875,21 +886,39 @@ export function AdminDashboard() {
                         <p>Joined: {user.joinedAt}</p>
                       </div>
                       <div className="flex gap-3">
-                        <button
-                          type="button"
-                          aria-label={`Promote ${user.firstName} ${user.lastName} to admin`}
-                          onClick={() =>
-                            openConfirmationDialog(
-                              "promote",
-                              `${user.firstName} ${user.lastName}`,
-                              () => handlePromoteUser(user)
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
-                        >
-                          <Crown className="h-4 w-4" />
-                          Promote to Admin
-                        </button>
+                        {user.accountType.trim().toLowerCase() === "admin" ? (
+                          <button
+                            type="button"
+                            aria-label={`Demote ${user.firstName} ${user.lastName} from admin`}
+                            onClick={() =>
+                              openConfirmationDialog(
+                                "demote",
+                                `${user.firstName} ${user.lastName}`,
+                                () => handleDemoteUser(user)
+                              )
+                            }
+                            className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                          >
+                            <BadgeMinus className="h-4 w-4" />
+                            Demote User
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            aria-label={`Promote ${user.firstName} ${user.lastName} to admin`}
+                            onClick={() =>
+                              openConfirmationDialog(
+                                "promote",
+                                `${user.firstName} ${user.lastName}`,
+                                () => handlePromoteUser(user)
+                              )
+                            }
+                            className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+                          >
+                            <Crown className="h-4 w-4" />
+                            Promote to Admin
+                          </button>
+                        )}
                         <button
                           type="button"
                           aria-label={`Deactivate ${user.firstName} ${user.lastName} account`}
