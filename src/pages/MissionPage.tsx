@@ -21,15 +21,14 @@ enrollment in computer science courses in school. DTech is run by high school an
       </section>
 
       {/* Impact Section */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto">
-          <Card className="relative overflow-hidden border-0 bg-gradient-to-r from-purple-700 via-violet-600 to-purple-600 p-8 text-white shadow-xl sm:p-10">
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="p-8 bg-white shadow-lg">
             <div className="absolute top-0 right-0 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
-
             <div className="relative text-center">
-              <h2 className="text-4xl mb-6 text-white">Our Vision</h2>
-              <p className="mx-auto max-w-4xl text-lg leading-8 text-white/90 sm:text-xl">
+              <h2 className="text-3xl mb-6 text-purple-900">Our Vision</h2>
+              <p className="mx-auto max-w-4xl text-lg leading-8 text-grey-600 sm:text-xl">
                 With women making up only 23% of computer science students in Wisconsin, Divas in Technology aims to increase that number to 50% by providing resources, mentorship, and a community to young girls interested in the tech field.
               </p>
             </div>
@@ -38,10 +37,10 @@ enrollment in computer science courses in school. DTech is run by high school an
       </section>
 
       {/* Mission Statement */}
-      <section className="py-16">
+      <section className="py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="p-8 bg-white shadow-lg">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="grid md:grid-cols-2 gap-6 items-center">
               <div>
                 <h2 className="text-3xl mb-6 text-purple-900">Our Mission </h2>
                 <p className="text-lg text-gray-700 mb-4">
