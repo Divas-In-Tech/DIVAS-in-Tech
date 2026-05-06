@@ -24,7 +24,9 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
     isUnder13: "",
     parentEmail: "",
     eventAttended: "",
-    password: ""
+    password: "",
+    accountType: "",
+    affiliation: "",
   })
 
   const [isSignUp, setIsSignUp] = useState(false)
@@ -34,7 +36,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
   const [userEmail, setUserEmail] = useState("");
   const [isPasswordReset, setPasswordReset] = useState(false)
 
-  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const update = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [field]: e.target.value })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,7 +93,9 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
         isUnder13: "",
         parentEmail: "",
         eventAttended: "",
-        password: ""
+        password: "",
+        accountType: "",
+        affiliation: ""
       })
 
       setIsSignUp(false)
@@ -139,7 +143,7 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                 setIsSuccess(false);
                 setIsSignUp(false);
                 setPasswordReset(false);
-                setForm({ firstName: "", lastName: "", email: "", isUnder13: "", parentEmail: "", eventAttended: "", password: "" });
+                setForm({ firstName: "", lastName: "", email: "", isUnder13: "", parentEmail: "", eventAttended: "", password: "", accountType: "", affiliation: "" });
               }} >
               Return to Login
             </Button>
@@ -171,6 +175,40 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
 
           {isSignUp && !isPasswordReset && (
             <>
+
+
+              <div>
+                <div>
+                <label htmlFor="accountType" className="block text-sm font-medium text-gray-800">Account Type</label>
+                  <select
+                      id="accountType"
+                      name="accountType"
+                      value={form.accountType}
+                      onChange={update("accountType")}
+                      required
+                      className="mt-2 block w-full rounded-md py-2 px-3 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                    >
+                      <option value="">Please select an option</option>
+                      <option value="student">Student</option>
+                      <option value="volunteer">Voluneteer</option>
+                    </select>
+                </div>
+
+                {form.accountType === "volunteer" && (
+                  <div>
+                    <Label htmlFor="affiliation">Affiliation</Label>
+                    <Input 
+                      id="affiliation"
+                      value={form.affiliation}
+                      onChange={update("affiliation")}
+                      placeholder="Affiliation"
+                    />
+                  </div>
+                )}
+              </div>
+
+
+
               <div>
                 <Label htmlFor="firstName">First Name</Label>
                 <Input 
@@ -201,10 +239,12 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                 />
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <input 
-                    type="checkbox"
+
+              {form.accountType === "student" && (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox"
                     id="under13"
                     checked={form.isUnder13 === "true"}
                     onChange={(e) => setForm({ ...form, isUnder13: e.target.checked ? "true" : "" })}
@@ -224,7 +264,8 @@ export function LoginDialog({ open, onOpenChange, onLogin }: LoginDialogProps) {
                     />
                   </div>
                 )}
-              </div>
+                </div>
+              )}
             </>
           )}
 
