@@ -8,6 +8,7 @@ describe("Navigation", () => {
     currentPage: "home",
     onNavigate: vi.fn(),
     isLoggedIn: false,
+    isApproved: false,
     onLoginClick: vi.fn(),
     onLogout: vi.fn(),
     userName: "",
@@ -17,6 +18,7 @@ describe("Navigation", () => {
     render(
       React.createElement(Navigation, {
         ...defaultProps,
+        isLoggedIn: true,
         isAdmin: true,
       })
     );
