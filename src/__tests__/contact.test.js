@@ -16,21 +16,10 @@ vi.mock("../supabaseConnection", () => ({
 
 import { ContactPage } from "../pages/ContactPage";
 
-const { invokeMock } = vi.hoisted(() => ({
-  invokeMock: vi.fn(),
-}));
-
-vi.mock("../supabaseConnection", () => ({
-  supabase: {
-    functions: {
-      invoke: invokeMock,
-    },
-  },
-}));
-
 describe("ContactPage", () => {
   beforeEach(() => {
     invokeMock.mockReset();
+    invokeMock.mockResolvedValue({ data: null, error: null });
   });
 
   test("renders the contact form fields name, topic, email, and message", () => {
