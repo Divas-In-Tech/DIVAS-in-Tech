@@ -3,6 +3,10 @@ import { Button } from "../components/ui/button";
 import { useState } from "react";
 
 import { supabase } from "../supabaseConnection";
+import {
+    containsInappropriateLanguage,
+    INAPPROPRIATE_MESSAGE_ERROR,
+} from "../utils/profanity";
 
 export function ContactPage() {
     const [form, setForm] = useState({
@@ -10,14 +14,30 @@ export function ContactPage() {
         topic: "",
         email: "",
         message: ""
-    })
+    });
+    const [messageError, setMessageError] = useState("");
 
     const update = (field: string) => (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => { setForm({ ...form, [field]: e.target.value });};
+    ) => {
+        const { value } = e.target;
+
+        if (field === "message" && messageError) {
+            setMessageError("");
+        }
+
+        setForm((currentForm) => ({ ...currentForm, [field]: value }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (containsInappropriateLanguage(form.message)) {
+            setMessageError(INAPPROPRIATE_MESSAGE_ERROR);
+            return;
+        }
+
+        setMessageError("");
         
         try {
             const { data, error } = await supabase.functions.invoke('send-email', { body: form});
@@ -108,13 +128,19 @@ export function ContactPage() {
                                     id="message"
                                     value={form.message}
                                     onChange={update("message")}
-
                                     name="message"
                                     placeholder = "Let us know what you think!"
                                     required
                                     rows={5}
+                                    aria-invalid={Boolean(messageError)}
+                                    aria-describedby={messageError ? "contact-message-error" : undefined}
                                     className="mt-2 block w-full rounded-md px-3 py-2 border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
                                 />
+                                {messageError && (
+                                    <p id="contact-message-error" role="alert" className="mt-2 text-sm text-red-600">
+                                        {messageError}
+                                    </p>
+                                )}
                             </div>
                             <Button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md">
                                 Send Message
