@@ -1,6 +1,6 @@
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
-import { Linkedin, Crown, Users, Wallet, Palette, LucideIcon } from "lucide-react";
+import { Linkedin, Crown, Users, Wallet, NotebookPenIcon, LucideIcon } from "lucide-react";
 
 interface BoardMember {
   id: number;
@@ -18,38 +18,39 @@ export function BoardPage() {
       id: 1,
       name: "Tania Mishra",
       title: "Founder, President",
-      bio: "Tania Mishra is a student at Marquette University. Tania has been interested in technology since her first digital exploration class in 6th grade. Since then, she has been involved in multiple programs focused on empowering and inspiring girls in tech, such as ProjectCSGirls and Girls Who Code. Tania is also a 2021 National Winner and 3-times Wisconsin Affiliate winner for NCWIT's Aspirations in Computing Award. She has interned at Northwestern Mutual as a mainframe developer, a full-stack developer, and a student instructor for the high school intern program. Tania wants to help lead more girls into the path of computer science, and she hopes to accomplish this through DTech!",
+      bio: "Tania Mishra is PhD student at the University of Michigan-Ann Arbor, pursuing a degree in Information. She graduated from Marquette University with a B.S. in Computer Science and Cognitive Science, with minors in Gender and Sexuality Studies and Dance and a concentration in Innovation Leadership. Tania has been involved in organizations such as ProjectCSGirls, Girls Who Code, and NCWIT. Tania founded Divas in Technology in 2020 with the goal of leading more girls into the path of computer science! ",
       icon: Crown,
       color: "purple",
       linkedIn: "https://www.linkedin.com/in/taniamishra127/"
     },
-    {
-      id: 2,
-      name: "Sarah Rubenstein",
-      title: "Vice President",
-      bio: "Sarah Rubenstein is a student at UW Madison who is majoring in computer science. She's been coding since middle school and has experience in a variety of languages such as Java, JavaScript, Python, and HTML/CSS. She was the software lead on her high school's FIRST robotics team. Sarah has interned at Northwestern Mutual as a web developer, and at Concurrency where she worked with cloud computing. She is passionate about teaching others to code and excited to work with students.",
-      icon: Users,
-      color: "violet",
-      linkedIn: "https://www.linkedin.com/in/sarah-rubenstein-b042471b1/"
-    },
-    {
-      id: 3,
-      name: "Sanjana Tarigoppula",
-      title: "Treasurer",
-      bio: "Sanjana Tarigoppula is a student at the University of Wisconsin-Madison. She started coding her sophomore year of high school, and is now majoring in Computer Sciences and pursuing a certificate in Business. Sanjana has interned at GE Healthcare and gained experience in Technical Product Management and Software Engineering. She will be continuing her journey at GE Healthcare as a full-time DTLP after graduation. Sanjana is very excited to serve on the board for Divas in Technology and increase awareness on tech careers!",
-      icon: Wallet,
-      color: "purple",
-      linkedIn: "https://www.linkedin.com/in/sanjanatarigoppula/"
-    },
-    {
-      id: 4,
-      name: "Alyshba Sharwani",
-      title: "Secretary, Designer",
-      bio: "Alyshba Sharwani is a student at the University of Wisconsin-Madison, where she is planning on completing a double major in Statistics and English and a minor in Textiles and Fashion Design. Her past extracurricular leadership experiences and organizational skills guide her role as Secretary of DTech, while her interest and experiences in art and design, including receiving several Scholastic art awards, lead her work as Brand Designer of DTech.",
-      icon: Palette,
-      color: "violet",
-      linkedIn: "https://www.linkedin.com/in/alyshba-sharwani/"
-    }
+    // Commented out for now until we have more board members to add
+    // {
+    //   id: 2,
+    //   name: "",
+    //   title: "Vice President",
+    //   bio: "",
+    //   icon: Users,
+    //   color: "violet",
+    //   linkedIn: ""
+    // },
+    // {
+    //   id: 3,
+    //   name: "",
+    //   title: "Treasurer",
+    //   bio: "",
+    //   icon: Wallet,
+    //   color: "purple",
+    //   linkedIn: ""
+    // },
+    // {
+    //   id: 4,
+    //   name: "",
+    //   title: "",
+    //   bio: "",
+    //   icon: NotebookPenIcon,
+    //   color: "violet",
+    //   linkedIn: ""
+    // }
   ];
 
   const getColorClasses = (color: "purple" | "violet") => {

@@ -24,9 +24,9 @@ export function HomePage() {
       {/* Mission Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-4xl text-gray-900 mb-4">Who we are?</h2>
+          <h2 className="text-4xl text-gray-900 mb-4">Who Are We?</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            DTech is a student-run organization that works to provide young girls with invaluable technological skills and knowledge, 
+            Divas in Tech (DTech) is a student-run organization that works to provide young girls with invaluable technological skills and knowledge, 
             empowering girls and thereby changing the future. We are proud to offer a wide array of technology programs for girls of all ages, 
             ethnicities, and backgrounds. DTech's programs are based on our experiences as women in STEM, and we aim to provide a safe 
             space for girls to explore technology.
@@ -90,7 +90,7 @@ export function HomePage() {
                   <div>
                     <h4 className="mb-2">Community Events</h4>
                     <p className="text-gray-600">
-                      Organize events that bring people together and strengthen community bonds.
+                      Organize events that bring people together and strengthen skills through mentorship and community.
                     </p>
                   </div>
                 </div>
@@ -99,7 +99,7 @@ export function HomePage() {
                   <div>
                     <h4 className="mb-2">Impact Initiatives</h4>
                     <p className="text-gray-600">
-                      Launch targeted programs addressing critical needs in education, health, and social services.
+                      Launch targeted programs addressing critical needs in education.
                     </p>
                   </div>
                 </div>
